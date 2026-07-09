@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A股复盘日报 - {{ date }}</title>
+    <style>
+        /* 专业报告样式 */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', -apple-system, sans-serif;
+            padding: 40px;
+            color: #333;
+            background: #fff;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #f5222d;
+        }
+        .header h1 {
+            font-size: 26px;
+            color: #1a1a2e;
+            letter-spacing: 2px;
+        }
+        .header .subtitle {
+            font-size: 14px;
+            color: #999;
+            margin-top: 8px;
+        }
+        .section {
+            margin: 30px 0;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            border-left: 4px solid #f5222d;
+            padding-left: 10px;
+            margin-bottom: 16px;
+            color: #1a1a2e;
+        }
+        /* 指数卡片 */
+        .index-grid {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .index-card {
+            padding: 18px 20px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            flex: 1;
+            min-width: 180px;
+            background: #fafafa;
+            transition: box-shadow 0.2s;
+        }
+        .index-card:hover {
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        .index-card .name {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 6px;
+        }
+        .index-card .price {
+            font-size: 22px;
+            font-weight: bold;
+        }
+        .index-card .change {
+            font-size: 14px;
+            margin-top: 4px;
+        }
+        .up { color: #f5222d; }
+        .down { color: #52c41a; }
+        /* 涨跌家数 */
+        .breadth-bar {
+            display: flex;
+            height: 24px;
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 12px 0;
+        }
+        .breadth-bar .advance {
+            background: #f5222d;
+            color: #fff;
+            font-size: 12px;
+            line-height: 24px;
+            text-align: center;
+        }
+        .breadth-bar .decline {
+            background: #52c41a;
+            color: #fff;
+            font-size: 12px;
+            line-height: 24px;
+            text-align: center;
+        }
+        .breadth-info {
+            font-size: 14px;
+            color: #666;
+            margin-top: 8px;
+        }
+        /* 表格 */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+        }
+        th, td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+        th {
+            background: #f5f5f5;
+            font-weight: 600;
+            color: #555;
+        }
+        tr:hover {
+            background: #fafafa;
+        }
+        /* 资金卡片 */
+        .flow-grid {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .flow-card {
+            flex: 1;
+            min-width: 220px;
+            padding: 18px 20px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        .flow-card .flow-title {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 6px;
+        }
+        .flow-card .flow-value {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .flow-card .flow-desc {
+            font-size: 13px;
+            color: #888;
+            margin-top: 6px;
+            line-height: 1.5;
+        }
+        /* AI 分析 */
+        .ai-analysis {
+            background: #f9f9f9;
+            padding: 24px 28px;
+            border-radius: 8px;
+            line-height: 2;
+            font-size: 15px;
+            border-left: 4px solid #1890ff;
+        }
+        .ai-analysis h2 {
+            font-size: 16px;
+            color: #1890ff;
+            margin: 16px 0 8px;
+        }
+        .ai-analysis h2:first-child {
+            margin-top: 0;
+        }
+        .ai-analysis p {
+            margin: 8px 0;
+            text-indent: 2em;
+        }
+        .ai-analysis ul, .ai-analysis ol {
+            margin: 8px 0 8px 2em;
+        }
+        .ai-analysis li {
+            margin: 4px 0;
+        }
+        /* 涨停统计 */
+        .limit-stats {
+            display: flex;
+            gap: 30px;
+            margin: 12px 0;
+        }
+        .limit-item {
+            text-align: center;
+        }
+        .limit-item .count {
+            font-size: 32px;
+            font-weight: bold;
+        }
+        .limit-item .label {
+            font-size: 13px;
+            color: #888;
+        }
+        /* 底部 */
+        .footer {
+            margin-top: 40px;
+            padding-top: 16px;
+            border-top: 1px solid #eee;
+            text-align: center;
+            font-size: 12px;
+            color: #bbb;
+        }
+        /* 打印优化 */
+        @media print {
+            body { padding: 20px; }
+            .index-card:hover { box-shadow: none; }
+            .section { page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <!-- 页头 -->
+    <div class="header">
+        <h1>A股复盘日报 — {{ date }}</h1>
+        <div class="subtitle">数据来源：公开市场数据 &middot; 生成时间：{{ date }}</div>
+    </div>
+
+    <!-- 一、大盘回顾 -->
+    <div class="section">
+        <h2 class="section-title">一、大盘回顾</h2>
+        <div class="index-grid">
+            {% for idx in indexes %}
+            <div class="index-card">
+                <div class="name">{{ idx.name }}（{{ idx.code }}）</div>
+                <div class="price {{ idx.status }}">{{ idx.close }}</div>
+                <div class="change {{ idx.status }}">
+                    {% if idx.status == "up" %}↑{% else %}↓{% endif %}
+                    {{ idx.change_pct|string }}%
+                    （{{ idx.change|string }}）
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div style="margin-top: 20px;">
+            <div style="font-size: 14px; color: #666; margin-bottom: 4px;">涨跌家数分布</div>
+            <div class="breadth-bar">
+                <div class="advance" style="width: {{ market_breadth.advance_pct }}%;">
+                    {% if market_breadth.advance_pct > 15 %}上涨 {{ market_breadth.advance }}{% endif %}
+                </div>
+                <div class="decline" style="width: {{ 100 - market_breadth.advance_pct }}%;">
+                    {% if market_breadth.advance_pct < 85 %}下跌 {{ market_breadth.decline }}{% endif %}
+                </div>
+            </div>
+            <div class="breadth-info">{{ market_breadth.description }}</div>
+        </div>
+    </div>
+
+    <!-- 二、板块资金热度 -->
+    <div class="section">
+        <h2 class="section-title">二、板块资金热度</h2>
+        <h3 style="font-size: 15px; color: #f5222d; margin: 10px 0 6px;">领涨板块 Top 5</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 50px;">序号</th>
+                    <th>板块名称</th>
+                    <th style="width: 100px;">涨幅</th>
+                    <th>驱动逻辑</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sector in top_sectors %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ sector.name }}</td>
+                    <td class="up">+{{ sector.change_pct }}%</td>
+                    <td style="color: #888;">{{ sector.reason }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <h3 style="font-size: 15px; color: #52c41a; margin: 16px 0 6px;">领跌板块 Top 5</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 50px;">序号</th>
+                    <th>板块名称</th>
+                    <th style="width: 100px;">跌幅</th>
+                    <th>调整原因</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sector in bottom_sectors %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ sector.name }}</td>
+                    <td class="down">{{ sector.change_pct }}%</td>
+                    <td style="color: #888;">{{ sector.reason }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 三、资金面分析 -->
+    <div class="section">
+        <h2 class="section-title">三、资金面分析</h2>
+        <div class="flow-grid">
+            <div class="flow-card">
+                <div class="flow-title">北向资金（当日）</div>
+                <div class="flow-value {% if north_flow.status == 'inflow' %}up{% else %}down{% endif %}">
+                    {% if north_flow.status == 'inflow' %}+{% endif %}{{ north_flow.value }}{{ north_flow.unit }}
+                </div>
+                <div class="flow-desc">{{ north_flow.description }}</div>
+            </div>
+            <div class="flow-card">
+                <div class="flow-title">主力资金（当日）</div>
+                <div class="flow-value {% if main_flow.status == 'inflow' %}up{% else %}down{% endif %}">
+                    {% if main_flow.status == 'inflow' %}+{% endif %}{{ main_flow.value }}{{ main_flow.unit }}
+                </div>
+                <div class="flow-desc">{{ main_flow.description }}</div>
+            </div>
+        </div>
+        <div style="margin-top: 12px; font-size: 14px; color: #666;">
+            两市成交额：{{ total_volume }} {{ total_volume_unit }}
+        </div>
+    </div>
+
+    <!-- 四、涨停板复盘 -->
+    <div class="section">
+        <h2 class="section-title">四、涨停板复盘</h2>
+        <div class="limit-stats">
+            <div class="limit-item">
+                <div class="count up">{{ limit_up.count }}</div>
+                <div class="label">涨停家数</div>
+            </div>
+            <div class="limit-item">
+                <div class="count down">{{ limit_down.count }}</div>
+                <div class="label">跌停家数</div>
+            </div>
+        </div>
+        {% if limit_up.stocks %}
+        <div style="margin-top: 8px;">
+            <span style="font-size: 14px; color: #666;">涨停热点个股：</span>
+            <span style="font-size: 14px; color: #f5222d;">
+                {% for stock in limit_up.stocks %}{{ stock }}{% if not loop.last %}、{% endif %}{% endfor %}
+            </span>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- 五、AI 市场解读 -->
+    <div class="section">
+        <h2 class="section-title">五、AI 市场解读</h2>
+        <div class="ai-analysis">{{ ai_text | safe }}</div>
+    </div>
+
+    <!-- 页脚 -->
+    <div class="footer">
+        <p>免责声明：本报告由 AI 辅助生成，仅供参考，不构成投资建议。</p>
+        <p>投资有风险，入市需谨慎。</p>
+    </div>
+</body>
+</html>

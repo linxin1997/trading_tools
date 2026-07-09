@@ -1,0 +1,47 @@
+# A股盯盘与复盘系统 — 全局配置
+# 加载优先级：环境变量 > config.yaml > 默认值
+
+wsl2:
+  memory_gb: 24
+  processors: 8
+
+database:
+  postgres:
+    host: localhost
+    port: 5432
+    user: postgres
+    password: postgres
+    dbname: trading
+    shared_buffers: 4GB
+    effective_cache_size: 8GB
+    work_mem: 64MB
+  duckdb:
+    temp_directory: /tmp/duckdb
+    memory_limit: 2GB
+  redis:
+    host: localhost
+    port: 6379
+    db: 0
+
+llm:
+  ollama_base_url: http://localhost:11434
+  report_model: qwen2.5:14b-instruct-q4_K_M
+  chat_model: qwen2.5:3b-instruct-q4_K_M
+  sentiment_model: qwen2.5:3b-instruct-q4_K_M
+
+news:
+  overseas_enabled: false          # V1.1 开启
+  crawl_frequency_min:
+    cls: 10
+    eastmoney: 15
+    xueqiu: 30
+
+report:
+  email_enabled: false
+  generate_hour: 18
+  generate_minute: 0
+
+risk:
+  scan_interval_seconds: 10
+  price_stop_loss: true
+  technical_breakdown: true
