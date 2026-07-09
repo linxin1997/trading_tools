@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>市场舆情每日简报</title>
+    <style id="theme-vars">
+/* =========================================================
+   A股盯盘与复盘系统 — Brand Design Tokens (v3)
+   Professional Investment Research Report Style
+   Reference: 半导体产业链每日简报
+   ========================================================= */
+
+:root {
+  /* ---- Color System ---- */
+  /* Brand Primary — Navy Blue */
+  --color-primary: #0f3460;
+  --color-primary-hover: #1a4a8a;
+  --color-primary-active: #0a2848;
+  --color-primary-light: #eaf0ff;
+  --color-primary-bg: #f0f4ff;
+
+  /* A-Stock Convention — Red=Up, Green=Down */
+  --color-up: #e74c3c;
+  --color-up-bg: #ffeaea;
+  --color-down: #27ae60;
+  --color-down-bg: #eaffea;
+  --color-flat: #888;
+
+  /* Semantic Status Colors */
+  --state-success: #27ae60;
+  --state-warning: #f39c12;
+  --state-error: #e74c3c;
+  --state-info: #2980b9;
+
+  /* Background & Surface — Light theme */
+  --bg-base: #f5f6f8;
+  --bg-elevated: #ffffff;
+  --bg-surface: #f8f9fb;
+  --bg-card: #ffffff;
+  --bg-hover: #f0f4ff;
+  --bg-overlay: rgba(0, 0, 0, 0.5);
+
+  /* Header Gradient */
+  --header-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+
+  /* Text */
+  --text-primary: #2c3e50;
+  --text-secondary: #555;
+  --text-tertiary: #888;
+  --text-inverse: #ffffff;
+
+  /* Border */
+  --border-default: #e8ecf1;
+  --border-subtle: #f0f0f0;
+  --border-strong: #ddd;
+
+  /* ---- Shape System ---- */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* ---- Typography ---- */
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --font-mono: "SF Mono", "JetBrains Mono", "Fira Code", "Consolas", monospace;
+
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-base: 14px;
+  --text-lg: 15px;
+  --text-xl: 18px;
+  --text-2xl: 22px;
+  --text-3xl: 28px;
+
+  --leading-tight: 1.2;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.7;
+
+  /* ---- Spacing ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* ---- Shadows ---- */
+  --shadow-sm: 0 1px 4px rgba(0,0,0,0.06);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+}
+
+/* Tag styles (from reference) */
+.tag-hot { background: #ffeaea; color: #e74c3c; font-size: 11px; padding: 2px 8px; border-radius: 4px; display: inline-block; }
+.tag-policy { background: #eaf6ff; color: #2980b9; font-size: 11px; padding: 2px 8px; border-radius: 4px; display: inline-block; }
+.tag-industry { background: #eaffea; color: #27ae60; font-size: 11px; padding: 2px 8px; border-radius: 4px; display: inline-block; }
+.tag-overseas { background: #fff3e0; color: #e67e22; font-size: 11px; padding: 2px 8px; border-radius: 4px; display: inline-block; }
+.tag-risk { background: #fff8e1; color: #f39c12; font-size: 11px; padding: 2px 8px; border-radius: 4px; display: inline-block; }
+
+/* Utility classes */
+.up { color: var(--color-up); }
+.down { color: var(--color-down); }
+.neutral { color: var(--color-flat); }
+
+/* Summary box gradient */
+.summary-box {
+  background: linear-gradient(135deg, #e8f0fe, #f0e8fe);
+  border-radius: 10px;
+  padding: 20px 24px;
+}
+
+/* Risk box */
+.risk-box {
+  background: #fff8e1;
+  border-left: 4px solid #f39c12;
+  border-radius: 8px;
+  padding: 16px 20px;
+}
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+    <style>
+        /* === Reset & Base === */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: #f5f6f8;
+            color: #2c3e50;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* === Layout === */
+        .page-wrapper {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 24px 16px 48px;
+        }
+
+        /* === Header === */
+        .header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            border-radius: 16px;
+            padding: 40px 36px;
+            color: #ffffff;
+            margin-bottom: 24px;
+        }
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        .header .subtitle {
+            font-size: 15px;
+            opacity: 0.8;
+            margin-bottom: 16px;
+        }
+        .header .date {
+            font-size: 13px;
+            opacity: 0.6;
+        }
+
+        /* === Card === */
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            padding: 28px 32px;
+            margin-bottom: 20px;
+        }
+
+        /* === Section Title === */
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #e8ecf1;
+        }
+
+        /* === Emotion Overview Grid === */
+        .emo-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+        .emo-item {
+            background: #f8f9fb;
+            border-radius: 10px;
+            padding: 16px 12px;
+            text-align: center;
+            border: 1px solid #f0f0f0;
+        }
+        .emo-item .emo-label {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 6px;
+        }
+        .emo-item .emo-value {
+            font-size: 24px;
+            font-weight: 700;
+        }
+        .emo-item .emo-value.positive { color: #e74c3c; }
+        .emo-item .emo-value.negative { color: #27ae60; }
+        .emo-item .emo-value.neutral-val { color: #888; }
+        .emo-item .emo-value.highlight { color: #0f3460; }
+
+        /* === Chart Container === */
+        .chart-container {
+            width: 100%;
+            height: 320px;
+        }
+
+        /* === Event List === */
+        .event-list {
+            list-style: none;
+        }
+        .event-item {
+            display: flex;
+            gap: 16px;
+            padding: 20px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .event-item:last-child {
+            border-bottom: none;
+        }
+        .event-badge {
+            flex-shrink: 0;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: #0f3460;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .event-body {
+            flex: 1;
+            min-width: 0;
+        }
+        .event-tags {
+            margin-bottom: 6px;
+        }
+        .event-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a1a2e;
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+        .event-reason {
+            font-size: 13px;
+            color: #555;
+            line-height: 1.7;
+            margin-bottom: 8px;
+        }
+        .event-stocks {
+            font-size: 12px;
+            color: #0f3460;
+            font-weight: 500;
+        }
+        .event-stocks span {
+            margin-right: 6px;
+        }
+
+        /* === Timeline === */
+        .timeline-item {
+            display: flex;
+            gap: 16px;
+            padding: 14px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .timeline-item:last-child {
+            border-bottom: none;
+        }
+        .timeline-dot {
+            flex-shrink: 0;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #0f3460;
+            margin-top: 4px;
+            position: relative;
+        }
+        .timeline-dot::after {
+            content: '';
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: calc(100% + 14px);
+            background: #e8ecf1;
+        }
+        .timeline-item:last-child .timeline-dot::after {
+            display: none;
+        }
+        .timeline-content .tl-date {
+            font-size: 11px;
+            color: #888;
+            margin-bottom: 2px;
+        }
+        .timeline-content .tl-text {
+            font-size: 13px;
+            color: #2c3e50;
+        }
+
+        /* === Risk Items === */
+        .risk-list {
+            list-style: none;
+        }
+        .risk-list li {
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 13px;
+            color: #555;
+            line-height: 1.6;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+        .risk-list li:last-child {
+            border-bottom: none;
+        }
+        .risk-bullet {
+            flex-shrink: 0;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #fff8e1;
+            color: #f39c12;
+            font-size: 11px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 1px;
+        }
+
+        /* === Footer === */
+        .footer {
+            text-align: center;
+            font-size: 11px;
+            color: #888;
+            padding-top: 24px;
+            line-height: 1.8;
+        }
+        .footer .disclaimer {
+            margin-top: 4px;
+            color: #bbb;
+        }
+
+        /* === Responsive === */
+        @media (max-width: 768px) {
+            .emo-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            .card {
+                padding: 20px 16px;
+            }
+            .header {
+                padding: 28px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-wrapper">
+
+        <!-- ===== Header ===== -->
+        <div class="header">
+            <h1>市场舆情每日简报</h1>
+            <div class="subtitle">覆盖重要政策、产业动态、资金行为</div>
+            <div class="date">2026年7月9日</div>
+        </div>
+
+        <!-- ===== Section 一、情绪概览 ===== -->
+        <div class="card">
+            <h2 class="section-title">一、情绪概览</h2>
+            <div class="emo-grid">
+                <div class="emo-item">
+                    <div class="emo-label">积极</div>
+                    <div class="emo-value positive">62%</div>
+                </div>
+                <div class="emo-item">
+                    <div class="emo-label">消极</div>
+                    <div class="emo-value negative">23%</div>
+                </div>
+                <div class="emo-item">
+                    <div class="emo-label">中性</div>
+                    <div class="emo-value neutral-val">15%</div>
+                </div>
+                <div class="emo-item">
+                    <div class="emo-label">新闻总量</div>
+                    <div class="emo-value highlight">1,247条</div>
+                </div>
+                <div class="emo-item">
+                    <div class="emo-label">情绪指数</div>
+                    <div class="emo-value positive">72.5</div>
+                    <div style="font-size:11px;color:#888;margin-top:4px;">偏积极</div>
+                </div>
+            </div>
+            <!-- ECharts Donut Chart -->
+            <div id="sentiment-chart" class="chart-container"></div>
+        </div>
+
+        <!-- ===== Section 二、核心资讯精选 ===== -->
+        <div class="card">
+            <h2 class="section-title">二、核心资讯精选</h2>
+            <ul class="event-list">
+
+                <!-- Item 1 -->
+                <li class="event-item">
+                    <div class="event-badge">1</div>
+                    <div class="event-body">
+                        <div class="event-tags">
+                            <span class="tag-policy">政策</span>
+                            <span class="tag-hot">热门</span>
+                        </div>
+                        <div class="event-title">央行宣布定向降准0.25个百分点 释放长期资金约5000亿元</div>
+                        <div class="event-reason">此次降准幅度超市场预期，释放约5000亿长期流动性，直接利好银行板块降低负债成本，同时有望带动市场风险偏好回升，对券商、地产等资金密集型行业形成间接支撑。</div>
+                        <div class="event-stocks">
+                            <span>招商银行</span>
+                            <span>平安银行</span>
+                            <span>宁波银行</span>
+                        </div>
+                    </div>
+                </li>
+
+                <!-- Item 2 -->
+                <li class="event-item">
+                    <div class="event-badge">2</div>
+                    <div class="event-body">
+                        <div class="event-tags">
+                            <span class="tag-industry">产业</span>
+                            <span class="tag-hot">热门</span>
+                        </div>
+                        <div class="event-title">宁德时代Q2净利润同比增长28% 超市场预期</div>
+                        <div class="event-reason">动力电池出货量环比增长15%，储能业务毛利率持续改善，海外市场拓展顺利。机构预计全年净利润有望突破500亿元，维持"买入"评级。</div>
+                        <div class="event-stocks">
+                            <span>宁德时代</span>
+                            <span>先导智能</span>
+                            <span>星云股份</span>
+                        </div>
+                    </div>
+                </li>
+
+                <!-- Item 3 -->
+                <li class="event-item">
+                    <div class="event-badge">3</div>
+                    <div class="event-body">
+                        <div class="event-tags">
+                            <span class="tag-industry">产业</span>
+                        </div>
+                        <div class="event-title">地产板块午后异动拉升 多只个股涨停</div>
+                        <div class="event-reason">市场传言地产政策进一步松绑，多地取消限购，销售端数据出现边际改善。短期内政策博弈加剧，需关注政策落地节奏与销售数据的持续性。</div>
+                        <div class="event-stocks">
+                            <span>保利发展</span>
+                            <span>万科A</span>
+                            <span>招商蛇口</span>
+                        </div>
+                    </div>
+                </li>
+
+                <!-- Item 4 -->
+                <li class="event-item">
+                    <div class="event-badge">4</div>
+                    <div class="event-body">
+                        <div class="event-tags">
+                            <span class="tag-overseas">海外</span>
+                        </div>
+                        <div class="event-title">美联储暗示年内可能再加息 美股三大指数收跌</div>
+                        <div class="event-reason">鲍威尔讲话偏鹰，市场对7月加息概率重新定价至65%。美股科技板块承压，纳斯达克下跌1.8%。需关注外资流向变化及人民币汇率波动。</div>
+                        <div class="event-stocks">
+                            <span>外资流出压力</span>
+                            <span>美元走强</span>
+                        </div>
+                    </div>
+                </li>
+
+                <!-- Item 5 -->
+                <li class="event-item">
+                    <div class="event-badge">5</div>
+                    <div class="event-body">
+                        <div class="event-tags">
+                            <span class="tag-industry">产业</span>
+                            <span class="tag-hot">热门</span>
+                        </div>
+                        <div class="event-title">贵州茅台：上半年营收同比增长18.5%</div>
+                        <div class="event-reason">直销渠道占比提升至45%，系列酒增速亮眼。i茅台APP贡献显著增量，产品结构持续优化。机构普遍看好中秋国庆旺季表现。</div>
+                        <div class="event-stocks">
+                            <span>贵州茅台</span>
+                            <span>五粮液</span>
+                            <span>泸州老窖</span>
+                        </div>
+                    </div>
+                </li>
+
+                <!-- Item 6 -->
+                <li class="event-item">
+                    <div class="event-badge">6</div>
+                    <div class="event-body">
+                        <div class="event-tags">
+                            <span class="tag-policy">政策</span>
+                        </div>
+                        <div class="event-title">半导体设备板块走强 北向资金净买入超30亿</div>
+                        <div class="event-reason">大基金三期投资加速落地，设备国产替代进入深水区。光刻、刻蚀、薄膜沉积等核心环节订单饱满，板块估值有望进一步提升。</div>
+                        <div class="event-stocks">
+                            <span>北方华创</span>
+                            <span>中微公司</span>
+                            <span>拓荆科技</span>
+                        </div>
+                    </div>
+                </li>
+
+                <!-- Item 7 -->
+                <li class="event-item">
+                    <div class="event-badge">7</div>
+                    <div class="event-body">
+                        <div class="event-tags">
+                            <span class="tag-industry">产业</span>
+                        </div>
+                        <div class="event-title">多家券商下调茅台目标价 消费复苏不及预期</div>
+                        <div class="event-reason">部分分析师认为批价回落反映终端需求疲软，社会库存仍处高位。需关注中秋旺季动销情况及经销商信心指标。</div>
+                        <div class="event-stocks">
+                            <span>风险提示：白酒板块短期承压</span>
+                        </div>
+                    </div>
+                </li>
+
+                <!-- Item 8 -->
+                <li class="event-item">
+                    <div class="event-badge">8</div>
+                    <div class="event-body">
+                        <div class="event-tags">
+                            <span class="tag-industry">产业</span>
+                            <span class="tag-hot">热门</span>
+                        </div>
+                        <div class="event-title">比亚迪6月销量再创新高 新能源车渗透率突破50%</div>
+                        <div class="event-reason">6月销量34.2万辆同比+35%，DM-i 5.0技术优势明显，海外市场增长强劲。新能源车渗透率首次突破50%里程碑，行业格局加速演变。</div>
+                        <div class="event-stocks">
+                            <span>比亚迪</span>
+                            <span>拓普集团</span>
+                            <span>三花智控</span>
+                        </div>
+                    </div>
+                </li>
+
+            </ul>
+        </div>
+
+        <!-- ===== Section 三、情绪周期判断 ===== -->
+        <div class="card">
+            <h2 class="section-title">三、情绪周期判断</h2>
+            <div class="summary-box" style="margin-bottom: 24px;">
+                <p style="font-size: 14px; line-height: 1.8; color: #2c3e50;">
+                    当前市场情绪处于<strong style="color: #e74c3c;">偏积极</strong>区间，情绪指数72.5，较前一日上升3.2个百分点。央行降准超预期是今日情绪回暖的核心驱动因素，叠加宁德时代、贵州茅台等龙头股业绩超预期，提振了市场对基本面修复的信心。但需注意，海外美联储加息预期升温可能对风险偏好形成压制，北向资金日内虽净流入但尾盘出现明显回落。短期建议关注政策落地节奏及中报业绩预告密集披露期的市场反应。
+                </p>
+            </div>
+
+            <h3 style="font-size: 15px; font-weight: 600; color: #1a1a2e; margin-bottom: 16px;">近期情绪变化时间线</h3>
+            <div>
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="tl-date">7月9日（今日）</div>
+                        <div class="tl-text"><span class="up">情绪指数上升至72.5</span> — 央行降准 + 龙头业绩超预期</div>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="tl-date">7月8日</div>
+                        <div class="tl-text">情绪指数69.3 — 半导体政策利好对冲地产担忧，情绪企稳</div>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="tl-date">7月5日</div>
+                        <div class="tl-text"><span class="down">情绪指数回落至64.1</span> — 外资连续净流出 + 美债收益率上行</div>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="tl-date">7月3-4日</div>
+                        <div class="tl-text">情绪指数66.8 — 新能源车销量数据提振，但消费板块偏弱</div>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="tl-date">7月2日</div>
+                        <div class="tl-text">情绪指数62.5 — PMI数据不及预期，市场观望情绪浓厚</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== Section 四、舆情风险提示 ===== -->
+        <div class="card">
+            <h2 class="section-title">四、舆情风险提示</h2>
+            <div class="risk-box">
+                <ul class="risk-list">
+                    <li>
+                        <span class="risk-bullet">1</span>
+                        <span><strong style="color: #f39c12;">海外流动性风险：</strong>美联储加息预期升温，美债收益率持续走高，可能导致外资阶段性流出A股，对高估值成长股形成压力。建议关注美元指数及北向资金流向变化。</span>
+                    </li>
+                    <li>
+                        <span class="risk-bullet">2</span>
+                        <span><strong style="color: #f39c12;">消费复苏不及预期：</strong>多家券商下调白酒目标价，社会库存偏高反映终端需求疲软。若中秋旺季动销不达预期，消费板块可能面临新一轮估值下修。</span>
+                    </li>
+                    <li>
+                        <span class="risk-bullet">3</span>
+                        <span><strong style="color: #f39c12;">地缘政治不确定性：</strong>全球贸易摩擦加剧，科技制裁范围可能扩大，半导体、AI等高科技领域面临供应链风险。需持续跟踪政策层面动向。</span>
+                    </li>
+                    <li>
+                        <span class="risk-bullet">4</span>
+                        <span><strong style="color: #f39c12;">市场情绪过热信号：</strong>近期涨停家数与连板高度攀升，短期赚钱效应集中，需警惕题材炒作退潮后的回调风险。建议控制仓位，聚焦基本面扎实的标的。</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- ===== Footer ===== -->
+        <div class="footer">
+            <div>数据来源：Wind、同花顺、东方财富、 Reuters、Bloomberg</div>
+            <div class="disclaimer">免责声明：本简报仅供参考，不构成投资建议。市场有风险，投资需谨慎。</div>
+        </div>
+
+    </div>
+
+    <!-- ===== ECharts Script ===== -->
+    <script>
+        /**
+         * 初始化情绪分布饼图（ECharts 环形图）
+         */
+        (function initSentimentChart() {
+            var chartDom = document.getElementById('sentiment-chart');
+            if (!chartDom) return;
+            var chart = echarts.init(chartDom);
+
+            var option = {
+                tooltip: {
+                    trigger: 'item',
+                    formatter: '{b}: {c} ({d}%)'
+                },
+                legend: {
+                    orient: 'vertical',
+                    right: '10%',
+                    top: 'center',
+                    itemWidth: 14,
+                    itemHeight: 14,
+                    textStyle: {
+                        fontSize: 13,
+                        color: '#555'
+                    }
+                },
+                series: [
+                    {
+                        name: '情绪分布',
+                        type: 'pie',
+                        radius: ['50%', '72%'],
+                        center: ['35%', '50%'],
+                        avoidLabelOverlap: false,
+                        itemStyle: {
+                            borderRadius: 6,
+                            borderColor: '#fff',
+                            borderWidth: 3
+                        },
+                        label: {
+                            show: true,
+                            position: 'center',
+                            formatter: '{total|1,247}\n{label|新闻总量}',
+                            rich: {
+                                total: {
+                                    fontSize: 26,
+                                    fontWeight: 'bold',
+                                    color: '#1a1a2e',
+                                    lineHeight: 36
+                                },
+                                label: {
+                                    fontSize: 12,
+                                    color: '#888',
+                                    lineHeight: 20
+                                }
+                            }
+                        },
+                        emphasis: {
+                            label: { show: true }
+                        },
+                        data: [
+                            { value: 773, name: '积极', itemStyle: { color: '#e74c3c' } },
+                            { value: 287, name: '消极', itemStyle: { color: '#27ae60' } },
+                            { value: 187, name: '中性', itemStyle: { color: '#95a5a6' } }
+                        ]
+                    }
+                ]
+            };
+
+            chart.setOption(option);
+
+            /**
+             * 响应窗口大小变化，自动重绘图表
+             */
+            window.addEventListener('resize', function () {
+                chart.resize();
+            });
+        })();
+    </script>
+</body>
+</html>

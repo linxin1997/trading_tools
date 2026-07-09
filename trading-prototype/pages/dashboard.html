@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>盯盘仪表盘</title>
+    <style id="theme-vars">
+/* =========================================================
+   A股盯盘与复盘系统 — Brand Design Tokens
+   Dark Finance Terminal Style
+   ========================================================= */
+
+:root {
+  /* ---- Color System ---- */
+  /* Brand Primary — Cool Indigo Blue */
+  --color-primary: #4f8ff7;
+  --color-primary-hover: #6da3fa;
+  --color-primary-active: #3a7be5;
+  --color-primary-light: rgba(79, 143, 247, 0.12);
+  --color-primary-bg: rgba(79, 143, 247, 0.06);
+
+  /* A-Stock Convention — Red=Up, Green=Down */
+  --color-up: #f5222d;
+  --color-up-bg: rgba(245, 34, 45, 0.10);
+  --color-down: #52c41a;
+  --color-down-bg: rgba(82, 196, 26, 0.10);
+  --color-flat: #8c8c8c;
+
+  /* Semantic Status Colors */
+  --state-success: #52c41a;
+  --state-warning: #faad14;
+  --state-error: #f5222d;
+  --state-info: #4f8ff7;
+
+  /* Background & Surface */
+  --bg-base: #0e1117;
+  --bg-elevated: #161b22;
+  --bg-surface: #1c2128;
+  --bg-overlay: rgba(0, 0, 0, 0.65);
+  --bg-sunken: #0d1117;
+
+  /* Text */
+  --text-primary: #e6edf3;
+  --text-secondary: #8b949e;
+  --text-tertiary: #6e7681;
+  --text-inverse: #0e1117;
+
+  /* Border */
+  --border-default: #30363d;
+  --border-subtle: #21262d;
+  --border-strong: #484f58;
+
+  /* ---- Shape System ---- */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+
+  /* ---- Typography ---- */
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+
+  --text-xs: 11px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-lg: 16px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+  --text-3xl: 30px;
+
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+
+  /* ---- Spacing ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* ---- Surface Depth ---- */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+}
+
+/* Typography Classes */
+.text-xs   { font-size: var(--text-xs);   line-height: var(--leading-normal); }
+.text-sm   { font-size: var(--text-sm);   line-height: var(--leading-normal); }
+.text-base { font-size: var(--text-base); line-height: var(--leading-normal); }
+.text-lg   { font-size: var(--text-lg);   line-height: var(--leading-tight); }
+.text-xl   { font-size: var(--text-xl);   line-height: var(--leading-tight); }
+.text-2xl  { font-size: var(--text-2xl);  line-height: var(--leading-tight); }
+.text-3xl  { font-size: var(--text-3xl);  line-height: var(--leading-tight); }
+
+.font-mono { font-family: var(--font-mono); }
+.font-sans { font-family: var(--font-family); }
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-primary: var(--color-primary);
+    --color-up: var(--color-up);
+    --color-down: var(--color-down);
+    --color-flat: var(--color-flat);
+  }
+  @layer base {
+    body { background: var(--bg-base); color: var(--text-primary); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased" style="background:var(--bg-base);color:var(--text-primary);font-family:var(--font-family);margin:0;padding:0;">
+    <main style="width:1440px;min-height:100vh;margin:0 auto;display:flex;overflow:hidden;">
+
+        <!-- ========== Left Sidebar ========== -->
+        <aside id="sidebar" style="width:240px;min-width:240px;background:var(--bg-elevated);border-right:1px solid var(--border-default);display:flex;flex-direction:column;transition:width .2s;">
+            <!-- Logo Area -->
+            <div style="padding:16px 16px 12px;border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;gap:10px;">
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                    <rect x="2" y="6" width="6" height="18" rx="1" fill="#4f8ff7"/>
+                    <rect x="10" y="2" width="6" height="22" rx="1" fill="#f5222d" opacity=".85"/>
+                    <rect x="18" y="10" width="6" height="14" rx="1" fill="#4f8ff7" opacity=".6"/>
+                </svg>
+                <span id="sidebar-logo-text" style="font-size:15px;font-weight:700;white-space:nowrap;letter-spacing:.5px;">A股盯盘与复盘</span>
+            </div>
+            <!-- Nav Menu -->
+            <nav style="flex:1;padding:8px 0;overflow-y:auto;">
+                <a href="#" class="nav-item active" style="display:flex;align-items:center;gap:10px;padding:10px 16px;color:var(--text-primary);text-decoration:none;border-radius:0;font-size:14px;background:var(--primary-light);border-left:3px solid var(--color-primary);">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                    <span>盯盘仪表盘</span>
+                </a>
+                <a href="#" class="nav-item" style="display:flex;align-items:center;gap:10px;padding:10px 16px;color:var(--text-secondary);text-decoration:none;border-radius:0;font-size:14px;border-left:3px solid transparent;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                    <span>选股器</span>
+                </a>
+                <a href="#" class="nav-item" style="display:flex;align-items:center;gap:10px;padding:10px 16px;color:var(--text-secondary);text-decoration:none;border-radius:0;font-size:14px;border-left:3px solid transparent;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    <span>复盘报告</span>
+                </a>
+                <a href="#" class="nav-item" style="display:flex;align-items:center;gap:10px;padding:10px 16px;color:var(--text-secondary);text-decoration:none;border-radius:0;font-size:14px;border-left:3px solid transparent;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    <span>风控监控</span>
+                </a>
+                <a href="#" class="nav-item" style="display:flex;align-items:center;gap:10px;padding:10px 16px;color:var(--text-secondary);text-decoration:none;border-radius:0;font-size:14px;border-left:3px solid transparent;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                    <span>持仓管理</span>
+                </a>
+                <a href="#" class="nav-item" style="display:flex;align-items:center;gap:10px;padding:10px 16px;color:var(--text-secondary);text-decoration:none;border-radius:0;font-size:14px;border-left:3px solid transparent;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                    <span>策略回测</span>
+                </a>
+                <a href="#" class="nav-item" style="display:flex;align-items:center;gap:10px;padding:10px 16px;color:var(--text-secondary);text-decoration:none;border-radius:0;font-size:14px;border-left:3px solid transparent;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>
+                    <span>舆情新闻</span>
+                </a>
+            </nav>
+            <!-- Sidebar Collapse Button -->
+            <div style="padding:8px;border-top:1px solid var(--border-subtle);">
+                <button onclick="toggleSidebar()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;background:transparent;border:1px solid var(--border-default);border-radius:var(--radius-md);color:var(--text-secondary);cursor:pointer;font-size:12px;">
+                    <svg id="collapse-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                    <span id="collapse-text">收起侧栏</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- ========== Right Content Area ========== -->
+        <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+
+            <!-- Top Bar -->
+            <header style="padding:12px 24px;border-bottom:1px solid var(--border-default);display:flex;align-items:center;justify-content:space-between;background:var(--bg-elevated);">
+                <h1 style="font-size:18px;font-weight:700;margin:0;">盯盘仪表盘</h1>
+                <div style="display:flex;align-items:center;gap:16px;">
+                    <span style="font-size:12px;color:var(--text-secondary);font-family:var(--font-mono);">2025-07-07 09:35:18</span>
+                    <span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;background:rgba(82,196,26,0.12);color:#52c41a;border-radius:var(--radius-full);font-size:12px;font-weight:500;">
+                        <span style="width:7px;height:7px;border-radius:50%;background:#52c41a;display:inline-block;"></span>
+                        已连接
+                    </span>
+                </div>
+            </header>
+
+            <!-- Scrollable Content -->
+            <div style="flex:1;overflow-y:auto;padding:20px 24px;">
+
+                <!-- ===== Index Cards Row ===== -->
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px;">
+
+                    <!-- 上证指数 -->
+                    <div style="background:var(--bg-surface);border:1px solid var(--border-default);border-radius:var(--radius-md);padding:16px;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                            <span style="font-size:13px;color:var(--text-secondary);">上证指数</span>
+                            <span style="font-size:11px;color:var(--text-tertiary);">000001.SH</span>
+                        </div>
+                        <div style="font-size:22px;font-weight:700;font-family:var(--font-mono);margin-bottom:4px;">3,200.50</div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span style="font-size:13px;font-weight:600;color:var(--color-up);font-family:var(--font-mono);">+27.03</span>
+                            <span style="font-size:12px;padding:2px 6px;border-radius:var(--radius-sm);background:var(--up-bg);color:var(--color-up);font-weight:600;font-family:var(--font-mono);">+0.85%</span>
+                        </div>
+                        <!-- mini sparkline -->
+                        <svg width="100%" height="28" viewBox="0 0 120 28" style="margin-top:8px;">
+                            <polyline points="0,22 10,20 20,18 30,15 40,17 50,12 60,14 70,10 80,8 90,11 100,7 110,9 120,5" fill="none" stroke="var(--color-up)" stroke-width="1.5"/>
+                        </svg>
+                    </div>
+
+                    <!-- 深证成指 -->
+                    <div style="background:var(--bg-surface);border:1px solid var(--border-default);border-radius:var(--radius-md);padding:16px;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                            <span style="font-size:13px;color:var(--text-secondary);">深证成指</span>
+                            <span style="font-size:11px;color:var(--text-tertiary);">399001.SZ</span>
+                        </div>
+                        <div style="font-size:22px;font-weight:700;font-family:var(--font-mono);margin-bottom:4px;">10,200.30</div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span style="font-size:13px;font-weight:600;color:var(--color-up);font-family:var(--font-mono);">+121.02</span>
+                            <span style="font-size:12px;padding:2px 6px;border-radius:var(--radius-sm);background:var(--up-bg);color:var(--color-up);font-weight:600;font-family:var(--font-mono);">+1.20%</span>
+                        </div>
+                        <svg width="100%" height="28" viewBox="0 0 120 28" style="margin-top:8px;">
+                            <polyline points="0,20 10,18 20,15 30,16 40,12 50,14 60,10 70,8 80,6 90,9 100,5 110,7 120,3" fill="none" stroke="var(--color-up)" stroke-width="1.5"/>
+                        </svg>
+                    </div>
+
+                    <!-- 创业板指 -->
+                    <div style="background:var(--bg-surface);border:1px solid var(--border-default);border-radius:var(--radius-md);padding:16px;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                            <span style="font-size:13px;color:var(--text-secondary);">创业板指</span>
+                            <span style="font-size:11px;color:var(--text-tertiary);">399006.SZ</span>
+                        </div>
+                        <div style="font-size:22px;font-weight:700;font-family:var(--font-mono);margin-bottom:4px;">2,150.80</div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span style="font-size:13px;font-weight:600;color:var(--color-down);font-family:var(--font-mono);">-7.55</span>
+                            <span style="font-size:12px;padding:2px 6px;border-radius:var(--radius-sm);background:var(--down-bg);color:var(--color-down);font-weight:600;font-family:var(--font-mono);">-0.35%</span>
+                        </div>
+                        <svg width="100%" height="28" viewBox="0 0 120 28" style="margin-top:8px;">
+                            <polyline points="0,8 10,6 20,10 30,12 40,9 50,14 60,11 70,15 80,13 90,17 100,14 110,18 120,20" fill="none" stroke="var(--color-down)" stroke-width="1.5"/>
+                        </svg>
+                    </div>
+
+                    <!-- 科创50 -->
+                    <div style="background:var(--bg-surface);border:1px solid var(--border-default);border-radius:var(--radius-md);padding:16px;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                            <span style="font-size:13px;color:var(--text-secondary);">科创50</span>
+                            <span style="font-size:11px;color:var(--text-tertiary);">000688.SH</span>
+                        </div>
+                        <div style="font-size:22px;font-weight:700;font-family:var(--font-mono);margin-bottom:4px;">980.60</div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span style="font-size:13px;font-weight:600;color:var(--color-up);font-family:var(--font-mono);">+5.07</span>
+                            <span style="font-size:12px;padding:2px 6px;border-radius:var(--radius-sm);background:var(--up-bg);color:var(--color-up);font-weight:600;font-family:var(--font-mono);">+0.52%</span>
+                        </div>
+                        <svg width="100%" height="28" viewBox="0 0 120 28" style="margin-top:8px;">
+                            <polyline points="0,18 10,16 20,19 30,14 40,16 50,12 60,13 70,10 80,12 90,8 100,10 110,7 120,9" fill="none" stroke="var(--color-up)" stroke-width="1.5"/>
+                        </svg>
+                    </div>
+
+                </div>
+
+                <!-- ===== Two-Column Layout: Heatmap + Watchlist ===== -->
+                <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:16px;margin-bottom:20px;">
+
+                    <!-- Left: Sector Heatmap -->
+                    <div style="background:var(--bg-surface);border:1px solid var(--border-default);border-radius:var(--radius-md);padding:16px;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                            <h2 style="font-size:15px;font-weight:600;margin:0;">板块热力图</h2>
+                            <span style="font-size:11px;color:var(--text-tertiary);">实时行情</span>
+                        </div>
+                        <!-- Treemap Grid -->
+                        <div id="heatmap" style="display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(3,72px);gap:4px;">
+
+                            <!-- 银行 +1.85% volume=large -->
+                            <div style="grid-column:span 2;grid-row:span 1;background:rgba(245,34,45,0.25);border-radius:var(--radius-sm);padding:10px;display:flex;flex-direction:column;justify-content:space-between;">
+                                <span style="font-size:14px;font-weight:600;">银行</span>
+                                <span style="font-size:16px;font-weight:700;color:var(--color-up);font-family:var(--font-mono);">+1.85%</span>
+                            </div>
+                            <!-- 科技 +2.30% volume=medium -->
+                            <div style="grid-column:span 1;grid-row:span 2;background:rgba(245,34,45,0.38);border-radius:var(--radius-sm);padding:10px;display:flex;flex-direction:column;justify-content:center;">
+                                <span style="font-size:14px;font-weight:600;">科技</span>
+                                <span style="font-size:18px;font-weight:700;color:var(--color-up);font-family:var(--font-mono);">+2.30%</span>
+                            </div>
+                            <!-- 医药 -0.65% volume=medium -->
+                            <div style="grid-column:span 1;grid-row:span 1;background:rgba(82,196,26,0.15);border-radius:var(--radius-sm);padding:10px;display:flex;flex-direction:column;justify-content:space-between;">
+                                <span style="font-size:14px;font-weight:600;">医药</span>
+                                <span style="font-size:15px;font-weight:700;color:var(--color-down);font-family:var(--font-mono);">-0.65%</span>
+                            </div>
+
+                            <!-- 消费 +0.95% volume=medium -->
+                            <div style="grid-column:span 1;grid-row:span 1;background:rgba(245,34,45,0.18);border-radius:var(--radius-sm);padding:10px;display:flex;flex-direction:column;justify-content:space-between;">
+                                <span style="font-size:14px;font-weight:600;">消费</span>
+                                <span style="font-size:15px;font-weight:700;color:var(--color-up);font-family:var(--font-mono);">+0.95%</span>
+                            </div>
+                            <!-- 新能源 +1.50% volume=large -->
+                            <div style="grid-column:span 1;grid-row:span 2;background:rgba(245,34,45,0.30);border-radius:var(--radius-sm);padding:10px;display:flex;flex-direction:column;justify-content:center;">
+                                <span style="font-size:14px;font-weight:600;">新能源</span>
+                                <span style="font-size:17px;font-weight:700;color:var(--color-up);font-family:var(--font-mono);">+1.50%</span>
+                            </div>
+                            <!-- 军工 -1.20% volume=medium -->
+                            <div style="grid-column:span 1;grid-row:span 1;background:rgba(82,196,26,0.22);border-radius:var(--radius-sm);padding:10px;display:flex;flex-direction:column;justify-content:space-between;">
+                                <span style="font-size:14px;font-weight:600;">军工</span>
+                                <span style="font-size:15px;font-weight:700;color:var(--color-down);font-family:var(--font-mono);">-1.20%</span>
+                            </div>
+
+                            <!-- 券商 +0.45% volume=small -->
+                            <div style="grid-column:span 1;grid-row:span 1;background:rgba(245,34,45,0.12);border-radius:var(--radius-sm);padding:10px;display:flex;flex-direction:column;justify-content:space-between;">
+                                <span style="font-size:13px;font-weight:600;">券商</span>
+                                <span style="font-size:13px;font-weight:700;color:var(--color-up);font-family:var(--font-mono);">+0.45%</span>
+                            </div>
+                            <!-- 地产 -0.85% volume=small -->
+                            <div style="grid-column:span 1;grid-row:span 1;background:rgba(82,196,26,0.18);border-radius:var(--radius-sm);padding:10px;display:flex;flex-direction:column;justify-content:space-between;">
+                                <span style="font-size:13px;font-weight:600;">地产</span>
+                                <span style="font-size:13px;font-weight:700;color:var(--color-down);font-family:var(--font-mono);">-0.85%</span>
+                            </div>
+
+                            <!-- 有色 +1.10% volume=medium -->
+                            <div style="grid-column:span 1;grid-row:span 1;background:rgba(245,34,45,0.22);border-radius:var(--radius-sm);padding:10px;display:flex;flex-direction:column;justify-content:space-between;">
+                                <span style="font-size:14px;font-weight:600;">有色</span>
+                                <span style="font-size:15px;font-weight:700;color:var(--color-up);font-family:var(--font-mono);">+1.10%</span>
+                            </div>
+                            <!-- 化工 +0.35% volume=small -->
+                            <div style="grid-column:span 1;grid-row:span 1;background:rgba(245,34,45,0.10);border-radius:var(--radius-sm);padding:10px;display:flex;flex-direction:column;justify-content:space-between;">
+                                <span style="font-size:13px;font-weight:600;">化工</span>
+                                <span style="font-size:13px;font-weight:700;color:var(--color-up);font-family:var(--font-mono);">+0.35%</span>
+                            </div>
+                            <!-- 传媒 -0.55% volume=small -->
+                            <div style="grid-column:span 1;grid-row:span 1;background:rgba(82,196,26,0.14);border-radius:var(--radius-sm);padding:10px;display:flex;flex-direction:column;justify-content:space-between;">
+                                <span style="font-size:13px;font-weight:600;">传媒</span>
+                                <span style="font-size:13px;font-weight:700;color:var(--color-down);font-family:var(--font-mono);">-0.55%</span>
+                            </div>
+                            <!-- 建筑 +0.25% volume=small -->
+                            <div style="grid-column:span 1;grid-row:span 1;background:rgba(245,34,45,0.08);border-radius:var(--radius-sm);padding:10px;display:flex;flex-direction:column;justify-content:space-between;">
+                                <span style="font-size:13px;font-weight:600;">建筑</span>
+                                <span style="font-size:13px;font-weight:700;color:var(--color-up);font-family:var(--font-mono);">+0.25%</span>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- Right: Watchlist Table -->
+                    <div style="background:var(--bg-surface);border:1px solid var(--border-default);border-radius:var(--radius-md);padding:16px;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                            <h2 style="font-size:15px;font-weight:600;margin:0;">自选股</h2>
+                            <span style="font-size:11px;color:var(--text-tertiary);">5 只</span>
+                        </div>
+                        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                            <thead>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <th style="text-align:left;padding:8px 4px;color:var(--text-tertiary);font-weight:500;font-size:11px;">代码</th>
+                                    <th style="text-align:left;padding:8px 4px;color:var(--text-tertiary);font-weight:500;font-size:11px;">名称</th>
+                                    <th style="text-align:right;padding:8px 4px;color:var(--text-tertiary);font-weight:500;font-size:11px;">现价</th>
+                                    <th style="text-align:right;padding:8px 4px;color:var(--text-tertiary);font-weight:500;font-size:11px;">涨跌幅</th>
+                                    <th style="text-align:right;padding:8px 4px;color:var(--text-tertiary);font-weight:500;font-size:11px;">成交量</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:10px 4px;color:var(--text-secondary);font-family:var(--font-mono);font-size:12px;">000001.SZ</td>
+                                    <td style="padding:10px 4px;font-weight:500;">平安银行</td>
+                                    <td style="padding:10px 4px;text-align:right;font-family:var(--font-mono);color:var(--color-up);">11.25</td>
+                                    <td style="padding:10px 4px;text-align:right;font-family:var(--font-mono);color:var(--color-up);font-weight:600;">+1.35%</td>
+                                    <td style="padding:10px 4px;text-align:right;font-family:var(--font-mono);color:var(--text-secondary);">25.6万手</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:10px 4px;color:var(--text-secondary);font-family:var(--font-mono);font-size:12px;">600519.SH</td>
+                                    <td style="padding:10px 4px;font-weight:500;">贵州茅台</td>
+                                    <td style="padding:10px 4px;text-align:right;font-family:var(--font-mono);color:var(--color-up);">1688.00</td>
+                                    <td style="padding:10px 4px;text-align:right;font-family:var(--font-mono);color:var(--color-up);font-weight:600;">+0.52%</td>
+                                    <td style="padding:10px 4px;text-align:right;font-family:var(--font-mono);color:var(--text-secondary);">3.2万手</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:10px 4px;color:var(--text-secondary);font-family:var(--font-mono);font-size:12px;">000333.SZ</td>
+                                    <td style="padding:10px 4px;font-weight:500;">美的集团</td>
+                                    <td style="padding:10px 4px;text-align:right;font-family:var(--font-mono);color:var(--color-down);">68.50</td>
+                                    <td style="padding:10px 4px;text-align:right;font-family:var(--font-mono);color:var(--color-down);font-weight:600;">-0.45%</td>
+                                    <td style="padding:10px 4px;text-align:right;font-family:var(--font-mono);color:var(--text-secondary);">12.1万手</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:10px 4px;color:var(--text-secondary);font-family:var(--font-mono);font-size:12px;">601318.SH</td>
+                                    <td style="padding:10px 4px;font-weight:500;">中国平安</td>
+                                    <td style="padding:10px 4px;text-align:right;font-family:var(--font-mono);color:var(--color-up);">48.20</td>
+                                    <td style="padding:10px 4px;text-align:right;font-family:var(--font-mono);color:var(--color-up);font-weight:600;">+0.85%</td>
+                                    <td style="padding:10px 4px;text-align:right;font-family:var(--font-mono);color:var(--text-secondary);">18.5万手</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:10px 4px;color:var(--text-secondary);font-family:var(--font-mono);font-size:12px;">600036.SH</td>
+                                    <td style="padding:10px 4px;font-weight:500;">招商银行</td>
+                                    <td style="padding:10px 4px;text-align:right;font-family:var(--font-mono);color:var(--color-up);">35.80</td>
+                                    <td style="padding:10px 4px;text-align:right;font-family:var(--font-mono);color:var(--color-up);font-weight:600;">+1.12%</td>
+                                    <td style="padding:10px 4px;text-align:right;font-family:var(--font-mono);color:var(--text-secondary);">22.3万手</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+
+                <!-- ===== Bottom: Top Gainers Strip ===== -->
+                <div style="background:var(--bg-surface);border:1px solid var(--border-default);border-radius:var(--radius-md);padding:16px;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                        <h2 style="font-size:15px;font-weight:600;margin:0;">涨幅榜</h2>
+                        <span style="font-size:11px;color:var(--text-tertiary);">今日 Top 10</span>
+                    </div>
+                    <div style="display:grid;grid-template-columns:repeat(10,1fr);gap:8px;">
+
+                        <!-- Gainer 1 -->
+                        <div style="background:var(--up-bg);border:1px solid rgba(245,34,45,0.20);border-radius:var(--radius-sm);padding:10px 8px;text-align:center;">
+                            <div style="font-size:11px;color:var(--text-secondary);margin-bottom:2px;">301286.SZ</div>
+                            <div style="font-size:13px;font-weight:600;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">华曙高科</div>
+                            <div style="font-size:12px;font-weight:700;color:var(--color-up);font-family:var(--font-mono);">+19.98%</div>
+                        </div>
+                        <!-- Gainer 2 -->
+                        <div style="background:var(--up-bg);border:1px solid rgba(245,34,45,0.20);border-radius:var(--radius-sm);padding:10px 8px;text-align:center;">
+                            <div style="font-size:11px;color:var(--text-secondary);margin-bottom:2px;">688265.SH</div>
+                            <div style="font-size:13px;font-weight:600;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">南芯科技</div>
+                            <div style="font-size:12px;font-weight:700;color:var(--color-up);font-family:var(--font-mono);">+16.85%</div>
+                        </div>
+                        <!-- Gainer 3 -->
+                        <div style="background:var(--up-bg);border:1px solid rgba(245,34,45,0.20);border-radius:var(--radius-sm);padding:10px 8px;text-align:center;">
+                            <div style="font-size:11px;color:var(--text-secondary);margin-bottom:2px;">300985.SZ</div>
+                            <div style="font-size:13px;font-weight:600;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">致远互联</div>
+                            <div style="font-size:12px;font-weight:700;color:var(--color-up);font-family:var(--font-mono);">+12.33%</div>
+                        </div>
+                        <!-- Gainer 4 -->
+                        <div style="background:var(--up-bg);border:1px solid rgba(245,34,45,0.20);border-radius:var(--radius-sm);padding:10px 8px;text-align:center;">
+                            <div style="font-size:11px;color:var(--text-secondary);margin-bottom:2px;">002049.SZ</div>
+                            <div style="font-size:13px;font-weight:600;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">紫光国微</div>
+                            <div style="font-size:12px;font-weight:700;color:var(--color-up);font-family:var(--font-mono);">+10.05%</div>
+                        </div>
+                        <!-- Gainer 5 -->
+                        <div style="background:var(--up-bg);border:1px solid rgba(245,34,45,0.20);border-radius:var(--radius-sm);padding:10px 8px;text-align:center;">
+                            <div style="font-size:11px;color:var(--text-secondary);margin-bottom:2px;">688036.SH</div>
+                            <div style="font-size:13px;font-weight:600;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">传音控股</div>
+                            <div style="font-size:12px;font-weight:700;color:var(--color-up);font-family:var(--font-mono);">+9.72%</div>
+                        </div>
+                        <!-- Gainer 6 -->
+                        <div style="background:var(--up-bg);border:1px solid rgba(245,34,45,0.20);border-radius:var(--radius-sm);padding:10px 8px;text-align:center;">
+                            <div style="font-size:11px;color:var(--text-secondary);margin-bottom:2px;">603185.SH</div>
+                            <div style="font-size:13px;font-weight:600;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">上机数控</div>
+                            <div style="font-size:12px;font-weight:700;color:var(--color-up);font-family:var(--font-mono);">+8.56%</div>
+                        </div>
+                        <!-- Gainer 7 -->
+                        <div style="background:var(--up-bg);border:1px solid rgba(245,34,45,0.20);border-radius:var(--radius-sm);padding:10px 8px;text-align:center;">
+                            <div style="font-size:11px;color:var(--text-secondary);margin-bottom:2px;">300750.SZ</div>
+                            <div style="font-size:13px;font-weight:600;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">宁德时代</div>
+                            <div style="font-size:12px;font-weight:700;color:var(--color-up);font-family:var(--font-mono);">+7.88%</div>
+                        </div>
+                        <!-- Gainer 8 -->
+                        <div style="background:var(--up-bg);border:1px solid rgba(245,34,45,0.20);border-radius:var(--radius-sm);padding:10px 8px;text-align:center;">
+                            <div style="font-size:11px;color:var(--text-secondary);margin-bottom:2px;">002475.SZ</div>
+                            <div style="font-size:13px;font-weight:600;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">立讯精密</div>
+                            <div style="font-size:12px;font-weight:700;color:var(--color-up);font-family:var(--font-mono);">+6.45%</div>
+                        </div>
+                        <!-- Gainer 9 -->
+                        <div style="background:var(--up-bg);border:1px solid rgba(245,34,45,0.20);border-radius:var(--radius-sm);padding:10px 8px;text-align:center;">
+                            <div style="font-size:11px;color:var(--text-secondary);margin-bottom:2px;">688008.SH</div>
+                            <div style="font-size:13px;font-weight:600;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">澜起科技</div>
+                            <div style="font-size:12px;font-weight:700;color:var(--color-up);font-family:var(--font-mono);">+5.92%</div>
+                        </div>
+                        <!-- Gainer 10 -->
+                        <div style="background:var(--up-bg);border:1px solid rgba(245,34,45,0.20);border-radius:var(--radius-sm);padding:10px 8px;text-align:center;">
+                            <div style="font-size:11px;color:var(--text-secondary);margin-bottom:2px;">600900.SH</div>
+                            <div style="font-size:13px;font-weight:600;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">长江电力</div>
+                            <div style="font-size:12px;font-weight:700;color:var(--color-up);font-family:var(--font-mono);">+5.30%</div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div><!-- end scrollable content -->
+
+        </div><!-- end right content area -->
+
+    </main>
+
+    <script>
+        /**
+         * 切换侧栏折叠/展开状态
+         */
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const icon = document.getElementById('collapse-icon');
+            const text = document.getElementById('collapse-text');
+            const logoText = document.getElementById('sidebar-logo-text');
+            const navItems = document.querySelectorAll('.nav-item span');
+
+            if (sidebar.style.width === '60px') {
+                /* 展开侧栏 */
+                sidebar.style.width = '240px';
+                sidebar.style.minWidth = '240px';
+                icon.innerHTML = '<polyline points="15 18 9 12 15 6"/>';
+                text.textContent = '收起侧栏';
+                logoText.textContent = 'A股盯盘与复盘';
+                navItems.forEach(s => s.style.display = '');
+            } else {
+                /* 折叠侧栏 */
+                sidebar.style.width = '60px';
+                sidebar.style.minWidth = '60px';
+                icon.innerHTML = '<polyline points="9 18 15 12 9 6"/>';
+                text.textContent = '';
+                logoText.textContent = '盯盘';
+                navItems.forEach(s => s.style.display = 'none');
+            }
+        }
+
+        /**
+         * 导航菜单悬停效果
+         */
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('mouseenter', function() {
+                if (!this.classList.contains('active')) {
+                    this.style.background = 'var(--primary-bg)';
+                    this.style.color = 'var(--text-primary)';
+                }
+            });
+            item.addEventListener('mouseleave', function() {
+                if (!this.classList.contains('active')) {
+                    this.style.background = 'transparent';
+                    this.style.color = 'var(--text-secondary)';
+                }
+            });
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.querySelectorAll('.nav-item').forEach(n => {
+                    n.classList.remove('active');
+                    n.style.background = 'transparent';
+                    n.style.borderLeft = '3px solid transparent';
+                    n.style.color = 'var(--text-secondary)';
+                });
+                this.classList.add('active');
+                this.style.background = 'var(--primary-light)';
+                this.style.borderLeft = '3px solid var(--color-primary)';
+                this.style.color = 'var(--text-primary)';
+            });
+        });
+    </script>
+</body>
+</html>

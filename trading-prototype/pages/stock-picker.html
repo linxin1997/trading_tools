@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>选股器 - A股盯盘与复盘</title>
+    <style id="theme-vars">
+/* =========================================================
+   A股盯盘与复盘系统 — Brand Design Tokens
+   Dark Finance Terminal Style
+   ========================================================= */
+
+:root {
+  /* ---- Color System ---- */
+  /* Brand Primary — Cool Indigo Blue */
+  --color-primary: #4f8ff7;
+  --color-primary-hover: #6da3fa;
+  --color-primary-active: #3a7be5;
+  --color-primary-light: rgba(79, 143, 247, 0.12);
+  --color-primary-bg: rgba(79, 143, 247, 0.06);
+
+  /* A-Stock Convention — Red=Up, Green=Down */
+  --color-up: #f5222d;
+  --color-up-bg: rgba(245, 34, 45, 0.10);
+  --color-down: #52c41a;
+  --color-down-bg: rgba(82, 196, 26, 0.10);
+  --color-flat: #8c8c8c;
+
+  /* Semantic Status Colors */
+  --state-success: #52c41a;
+  --state-warning: #faad14;
+  --state-error: #f5222d;
+  --state-info: #4f8ff7;
+
+  /* Background & Surface */
+  --bg-base: #0e1117;
+  --bg-elevated: #161b22;
+  --bg-surface: #1c2128;
+  --bg-overlay: rgba(0, 0, 0, 0.65);
+  --bg-sunken: #0d1117;
+
+  /* Text */
+  --text-primary: #e6edf3;
+  --text-secondary: #8b949e;
+  --text-tertiary: #6e7681;
+  --text-inverse: #0e1117;
+
+  /* Border */
+  --border-default: #30363d;
+  --border-subtle: #21262d;
+  --border-strong: #484f58;
+
+  /* ---- Shape System ---- */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+
+  /* ---- Typography ---- */
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+
+  --text-xs: 11px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-lg: 16px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+  --text-3xl: 30px;
+
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+
+  /* ---- Spacing ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* ---- Surface Depth ---- */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+}
+
+/* Typography Classes */
+.text-xs   { font-size: var(--text-xs);   line-height: var(--leading-normal); }
+.text-sm   { font-size: var(--text-sm);   line-height: var(--leading-normal); }
+.text-base { font-size: var(--text-base); line-height: var(--leading-normal); }
+.text-lg   { font-size: var(--text-lg);   line-height: var(--leading-tight); }
+.text-xl   { font-size: var(--text-xl);   line-height: var(--leading-tight); }
+.text-2xl  { font-size: var(--text-2xl);  line-height: var(--leading-tight); }
+.text-3xl  { font-size: var(--text-3xl);  line-height: var(--leading-tight); }
+
+.font-mono { font-family: var(--font-mono); }
+.font-sans { font-family: var(--font-family); }
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-primary: var(--color-primary);
+  }
+  @layer base {
+    body { background: var(--color-background); color: var(--color-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased" style="background:var(--bg-base);color:var(--text-primary);">
+
+    <div style="width:1440px;margin:0 auto;display:flex;min-height:100vh;">
+
+        <!-- ========== 左侧导航栏 ========== -->
+        <aside style="width:240px;background:var(--bg-elevated);border-right:1px solid var(--border-default);flex-shrink:0;display:flex;flex-direction:column;">
+            <!-- Logo -->
+            <div style="padding:20px 16px 16px;border-bottom:1px solid var(--border-default);">
+                <div style="font-size:15px;font-weight:700;color:var(--color-primary);letter-spacing:0.5px;">A股盯盘与复盘</div>
+                <div style="font-size:11px;color:var(--text-tertiary);margin-top:2px;">Trading Terminal v2.0</div>
+            </div>
+            <!-- 导航菜单 -->
+            <nav style="flex:1;padding:8px 0;overflow-y:auto;" class="no-scrollbar">
+                <a href="#" style="display:flex;align-items:center;gap:10px;padding:9px 16px;font-size:13px;color:var(--text-secondary);text-decoration:none;border-left:3px solid transparent;transition:all .15s;" onmouseover="this.style.background='var(--bg-surface)';this.style.color='var(--text-primary)'" onmouseout="this.style.background='transparent';this.style.color='var(--text-secondary)'">
+                    <i data-icon="monitor" style="width:16px;height:16px;"></i>
+                    <span>盯盘仪表盘</span>
+                </a>
+                <a href="#" style="display:flex;align-items:center;gap:10px;padding:9px 16px;font-size:13px;color:var(--color-primary);text-decoration:none;background:var(--color-primary-bg);border-left:3px solid var(--color-primary);font-weight:600;">
+                    <i data-icon="search" style="width:16px;height:16px;"></i>
+                    <span>选股器</span>
+                </a>
+                <a href="#" style="display:flex;align-items:center;gap:10px;padding:9px 16px;font-size:13px;color:var(--text-secondary);text-decoration:none;border-left:3px solid transparent;transition:all .15s;" onmouseover="this.style.background='var(--bg-surface)';this.style.color='var(--text-primary)'" onmouseout="this.style.background='transparent';this.style.color='var(--text-secondary)'">
+                    <i data-icon="file-bar-chart" style="width:16px;height:16px;"></i>
+                    <span>复盘报告</span>
+                </a>
+                <a href="#" style="display:flex;align-items:center;gap:10px;padding:9px 16px;font-size:13px;color:var(--text-secondary);text-decoration:none;border-left:3px solid transparent;transition:all .15s;" onmouseover="this.style.background='var(--bg-surface)';this.style.color='var(--text-primary)'" onmouseout="this.style.background='transparent';this.style.color='var(--text-secondary)'">
+                    <i data-icon="shield-alert" style="width:16px;height:16px;"></i>
+                    <span>风控监控</span>
+                </a>
+                <a href="#" style="display:flex;align-items:center;gap:10px;padding:9px 16px;font-size:13px;color:var(--text-secondary);text-decoration:none;border-left:3px solid transparent;transition:all .15s;" onmouseover="this.style.background='var(--bg-surface)';this.style.color='var(--text-primary)'" onmouseout="this.style.background='transparent';this.style.color='var(--text-secondary)'">
+                    <i data-icon="wallet" style="width:16px;height:16px;"></i>
+                    <span>持仓管理</span>
+                </a>
+                <a href="#" style="display:flex;align-items:center;gap:10px;padding:9px 16px;font-size:13px;color:var(--text-secondary);text-decoration:none;border-left:3px solid transparent;transition:all .15s;" onmouseover="this.style.background='var(--bg-surface)';this.style.color='var(--text-primary)'" onmouseout="this.style.background='transparent';this.style.color='var(--text-secondary)'">
+                    <i data-icon="flask-conical" style="width:16px;height:16px;"></i>
+                    <span>策略回测</span>
+                </a>
+                <a href="#" style="display:flex;align-items:center;gap:10px;padding:9px 16px;font-size:13px;color:var(--text-secondary);text-decoration:none;border-left:3px solid transparent;transition:all .15s;" onmouseover="this.style.background='var(--bg-surface)';this.style.color='var(--text-primary)'" onmouseout="this.style.background='transparent';this.style.color='var(--text-secondary)'">
+                    <i data-icon="newspaper" style="width:16px;height:16px;"></i>
+                    <span>舆情新闻</span>
+                </a>
+            </nav>
+            <!-- 底部用户区 -->
+            <div style="padding:12px 16px;border-top:1px solid var(--border-default);display:flex;align-items:center;gap:8px;">
+                <div style="width:28px;height:28px;border-radius:var(--radius-full);background:var(--bg-surface);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--color-primary);">U</div>
+                <div>
+                    <div style="font-size:12px;color:var(--text-primary);">交易员</div>
+                    <div style="font-size:10px;color:var(--text-tertiary);">专业版</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ========== 右侧内容区 ========== -->
+        <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+
+            <!-- 顶部栏 -->
+            <header style="height:48px;background:var(--bg-elevated);border-bottom:1px solid var(--border-default);display:flex;align-items:center;justify-content:space-between;padding:0 24px;flex-shrink:0;">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <h1 style="font-size:16px;font-weight:700;color:var(--text-primary);margin:0;">选股器</h1>
+                    <span style="font-size:11px;color:var(--text-tertiary);background:var(--bg-surface);padding:2px 8px;border-radius:var(--radius-full);">多因子筛选</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <span style="font-size:11px;color:var(--text-tertiary);">上次筛选: 2026-07-07 14:32</span>
+                    <button style="background:var(--bg-surface);border:1px solid var(--border-default);color:var(--text-secondary);padding:4px 10px;border-radius:var(--radius-sm);font-size:12px;cursor:pointer;display:flex;align-items:center;gap:4px;">
+                        <i data-icon="save" style="width:12px;height:12px;"></i> 保存方案
+                    </button>
+                </div>
+            </header>
+
+            <!-- 可滚动内容区 -->
+            <div style="flex:1;overflow-y:auto;padding:20px 24px;" class="no-scrollbar">
+
+                <!-- ===== 条件构建区域 ===== -->
+                <section style="background:var(--bg-surface);border:1px solid var(--border-default);border-radius:var(--radius-md);padding:16px 20px;margin-bottom:16px;">
+                    <!-- 因子分类标签 -->
+                    <div style="display:flex;align-items:center;gap:0;margin-bottom:16px;border-bottom:1px solid var(--border-subtle);">
+                        <div style="padding:8px 16px;font-size:13px;font-weight:600;color:var(--color-primary);border-bottom:2px solid var(--color-primary);cursor:pointer;">技术指标</div>
+                        <div style="padding:8px 16px;font-size:13px;color:var(--text-secondary);cursor:pointer;transition:color .15s;" onmouseover="this.style.color='var(--text-primary)'" onmouseout="this.style.color='var(--text-secondary)'">财务指标</div>
+                        <div style="padding:8px 16px;font-size:13px;color:var(--text-secondary);cursor:pointer;transition:color .15s;" onmouseover="this.style.color='var(--text-primary)'" onmouseout="this.style.color='var(--text-secondary)'">情绪指标</div>
+                    </div>
+
+                    <!-- 条件行 -->
+                    <div style="display:flex;flex-direction:column;gap:10px;">
+
+                        <!-- 条件行1 -->
+                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                            <div style="display:flex;align-items:center;gap:6px;background:var(--bg-base);border:1px solid var(--border-default);border-radius:var(--radius-sm);padding:0 10px;">
+                                <select style="background:transparent;border:none;color:var(--text-primary);font-size:12px;padding:6px 2px;outline:none;cursor:pointer;">
+                                    <option>MACD金叉</option>
+                                    <option>MACD死叉</option>
+                                    <option>MACD柱放大</option>
+                                </select>
+                                <i data-icon="chevron-down" style="width:12px;height:12px;color:var(--text-tertiary);"></i>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:6px;background:var(--bg-base);border:1px solid var(--border-default);border-radius:var(--radius-sm);padding:0 10px;">
+                                <select style="background:transparent;border:none;color:var(--text-primary);font-size:12px;padding:6px 2px;outline:none;cursor:pointer;">
+                                    <option>大于</option>
+                                    <option>小于</option>
+                                    <option>等于</option>
+                                    <option>大于等于</option>
+                                    <option>小于等于</option>
+                                </select>
+                                <i data-icon="chevron-down" style="width:12px;height:12px;color:var(--text-tertiary);"></i>
+                            </div>
+                            <div style="background:var(--bg-base);border:1px solid var(--border-default);border-radius:var(--radius-sm);padding:0 10px;">
+                                <input type="text" value="0" style="background:transparent;border:none;color:var(--text-primary);font-size:12px;padding:6px 2px;outline:none;width:40px;font-family:var(--font-mono);">
+                            </div>
+
+                            <!-- AND 逻辑 -->
+                            <div style="display:flex;align-items:center;gap:6px;background:var(--bg-base);border:1px solid var(--border-default);border-radius:var(--radius-sm);padding:0 10px;">
+                                <select style="background:transparent;border:none;color:var(--state-warning);font-size:11px;font-weight:600;padding:6px 2px;outline:none;cursor:pointer;">
+                                    <option>AND</option>
+                                    <option>OR</option>
+                                </select>
+                                <i data-icon="chevron-down" style="width:12px;height:12px;color:var(--text-tertiary);"></i>
+                            </div>
+
+                            <div style="display:flex;align-items:center;gap:6px;background:var(--bg-base);border:1px solid var(--border-default);border-radius:var(--radius-sm);padding:0 10px;">
+                                <select style="background:transparent;border:none;color:var(--text-primary);font-size:12px;padding:6px 2px;outline:none;cursor:pointer;">
+                                    <option>RSI(14)</option>
+                                    <option>RSI(6)</option>
+                                    <option>RSI(28)</option>
+                                </select>
+                                <i data-icon="chevron-down" style="width:12px;height:12px;color:var(--text-tertiary);"></i>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:6px;background:var(--bg-base);border:1px solid var(--border-default);border-radius:var(--radius-sm);padding:0 10px;">
+                                <select style="background:transparent;border:none;color:var(--text-primary);font-size:12px;padding:6px 2px;outline:none;cursor:pointer;">
+                                    <option>小于</option>
+                                    <option>大于</option>
+                                    <option>等于</option>
+                                </select>
+                                <i data-icon="chevron-down" style="width:12px;height:12px;color:var(--text-tertiary);"></i>
+                            </div>
+                            <div style="background:var(--bg-base);border:1px solid var(--border-default);border-radius:var(--radius-sm);padding:0 10px;">
+                                <input type="text" value="70" style="background:transparent;border:none;color:var(--text-primary);font-size:12px;padding:6px 2px;outline:none;width:40px;font-family:var(--font-mono);">
+                            </div>
+                        </div>
+
+                        <!-- 条件行2 -->
+                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                            <!-- OR 逻辑标签 -->
+                            <div style="display:flex;align-items:center;gap:6px;background:var(--bg-base);border:1px solid var(--border-default);border-radius:var(--radius-sm);padding:0 10px;">
+                                <select style="background:transparent;border:none;color:var(--state-info);font-size:11px;font-weight:600;padding:6px 2px;outline:none;cursor:pointer;">
+                                    <option>OR</option>
+                                    <option>AND</option>
+                                </select>
+                                <i data-icon="chevron-down" style="width:12px;height:12px;color:var(--text-tertiary);"></i>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:6px;background:var(--bg-base);border:1px solid var(--border-default);border-radius:var(--radius-sm);padding:0 10px;">
+                                <select style="background:transparent;border:none;color:var(--text-primary);font-size:12px;padding:6px 2px;outline:none;cursor:pointer;">
+                                    <option>5日均线</option>
+                                    <option>10日均线</option>
+                                    <option>20日均线</option>
+                                    <option>60日均线</option>
+                                </select>
+                                <i data-icon="chevron-down" style="width:12px;height:12px;color:var(--text-tertiary);"></i>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:6px;background:var(--bg-base);border:1px solid var(--border-default);border-radius:var(--radius-sm);padding:0 10px;">
+                                <select style="background:transparent;border:none;color:var(--color-primary);font-size:12px;padding:6px 2px;outline:none;cursor:pointer;">
+                                    <option>上穿</option>
+                                    <option>下穿</option>
+                                    <option>高于</option>
+                                    <option>低于</option>
+                                </select>
+                                <i data-icon="chevron-down" style="width:12px;height:12px;color:var(--text-tertiary);"></i>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:6px;background:var(--bg-base);border:1px solid var(--border-default);border-radius:var(--radius-sm);padding:0 10px;">
+                                <select style="background:transparent;border:none;color:var(--text-primary);font-size:12px;padding:6px 2px;outline:none;cursor:pointer;">
+                                    <option>20日均线</option>
+                                    <option>10日均线</option>
+                                    <option>60日均线</option>
+                                </select>
+                                <i data-icon="chevron-down" style="width:12px;height:12px;color:var(--text-tertiary);"></i>
+                            </div>
+                        </div>
+
+                        <!-- 添加条件按钮 -->
+                        <div style="padding-top:4px;">
+                            <button style="background:transparent;border:1px dashed var(--border-default);color:var(--text-secondary);padding:6px 14px;border-radius:var(--radius-sm);font-size:12px;cursor:pointer;display:flex;align-items:center;gap:4px;transition:all .15s;" onmouseover="this.style.borderColor='var(--color-primary)';this.style.color='var(--color-primary)'" onmouseout="this.style.borderColor='var(--border-default)';this.style.color='var(--text-secondary)'">
+                                <i data-icon="plus" style="width:12px;height:12px;"></i> 添加条件
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 权重滑块区域 -->
+                    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border-subtle);">
+                        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;font-weight:600;">因子权重分配</div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;">
+                            <!-- MACD信号 30% -->
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <span style="font-size:11px;color:var(--text-secondary);width:64px;flex-shrink:0;">MACD信号</span>
+                                <div style="flex:1;height:4px;background:var(--bg-base);border-radius:var(--radius-full);overflow:hidden;">
+                                    <div style="width:30%;height:100%;background:var(--color-primary);border-radius:var(--radius-full);"></div>
+                                </div>
+                                <span style="font-size:11px;color:var(--color-primary);font-family:var(--font-mono);width:28px;text-align:right;">30%</span>
+                            </div>
+                            <!-- RSI 25% -->
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <span style="font-size:11px;color:var(--text-secondary);width:64px;flex-shrink:0;">RSI</span>
+                                <div style="flex:1;height:4px;background:var(--bg-base);border-radius:var(--radius-full);overflow:hidden;">
+                                    <div style="width:25%;height:100%;background:var(--color-primary);border-radius:var(--radius-full);opacity:0.85;"></div>
+                                </div>
+                                <span style="font-size:11px;color:var(--color-primary);font-family:var(--font-mono);width:28px;text-align:right;">25%</span>
+                            </div>
+                            <!-- 均线形态 25% -->
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <span style="font-size:11px;color:var(--text-secondary);width:64px;flex-shrink:0;">均线形态</span>
+                                <div style="flex:1;height:4px;background:var(--bg-base);border-radius:var(--radius-full);overflow:hidden;">
+                                    <div style="width:25%;height:100%;background:var(--color-primary);border-radius:var(--radius-full);opacity:0.7;"></div>
+                                </div>
+                                <span style="font-size:11px;color:var(--color-primary);font-family:var(--font-mono);width:28px;text-align:right;">25%</span>
+                            </div>
+                            <!-- 成交量 20% -->
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <span style="font-size:11px;color:var(--text-secondary);width:64px;flex-shrink:0;">成交量</span>
+                                <div style="flex:1;height:4px;background:var(--bg-base);border-radius:var(--radius-full);overflow:hidden;">
+                                    <div style="width:20%;height:100%;background:var(--color-primary);border-radius:var(--radius-full);opacity:0.55;"></div>
+                                </div>
+                                <span style="font-size:11px;color:var(--color-primary);font-family:var(--font-mono);width:28px;text-align:right;">20%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 开始筛选按钮 -->
+                    <div style="margin-top:14px;display:flex;justify-content:flex-end;">
+                        <button style="background:var(--color-primary);color:#fff;border:none;padding:8px 24px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background .15s;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'">
+                            <i data-icon="play" style="width:14px;height:14px;"></i> 开始筛选
+                        </button>
+                    </div>
+                </section>
+
+                <!-- ===== 分隔线 ===== -->
+                <div style="height:1px;background:var(--border-default);margin:0 0 16px;"></div>
+
+                <!-- ===== 结果区域 ===== -->
+                <section>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                        <h2 style="font-size:14px;font-weight:700;color:var(--text-primary);margin:0;display:flex;align-items:center;gap:8px;">
+                            结果区域 <span style="font-size:11px;color:var(--text-tertiary);font-weight:400;">(Top 10)</span>
+                        </h2>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span style="font-size:11px;color:var(--text-tertiary);">共筛选出 247 只股票</span>
+                            <button style="background:var(--bg-surface);border:1px solid var(--border-default);color:var(--text-secondary);padding:3px 10px;border-radius:var(--radius-sm);font-size:11px;cursor:pointer;">导出CSV</button>
+                        </div>
+                    </div>
+
+                    <!-- 结果表格 -->
+                    <div style="background:var(--bg-surface);border:1px solid var(--border-default);border-radius:var(--radius-md);overflow:hidden;">
+                        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                            <thead>
+                                <tr style="background:var(--bg-elevated);">
+                                    <th style="text-align:left;padding:8px 12px;color:var(--text-secondary);font-weight:600;font-size:11px;border-bottom:1px solid var(--border-default);width:48px;">排名</th>
+                                    <th style="text-align:left;padding:8px 12px;color:var(--text-secondary);font-weight:600;font-size:11px;border-bottom:1px solid var(--border-default);width:80px;">代码</th>
+                                    <th style="text-align:left;padding:8px 12px;color:var(--text-secondary);font-weight:600;font-size:11px;border-bottom:1px solid var(--border-default);width:80px;">名称</th>
+                                    <th style="text-align:left;padding:8px 12px;color:var(--text-secondary);font-weight:600;font-size:11px;border-bottom:1px solid var(--border-default);width:200px;">综合评分</th>
+                                    <th style="text-align:center;padding:8px 12px;color:var(--text-secondary);font-weight:600;font-size:11px;border-bottom:1px solid var(--border-default);width:90px;">MACD信号</th>
+                                    <th style="text-align:center;padding:8px 12px;color:var(--text-secondary);font-weight:600;font-size:11px;border-bottom:1px solid var(--border-default);width:80px;">RSI(14)</th>
+                                    <th style="text-align:center;padding:8px 12px;color:var(--text-secondary);font-weight:600;font-size:11px;border-bottom:1px solid var(--border-default);">均线状态</th>
+                                </tr>
+                            </thead>
+                            <tbody id="results-table-body">
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 评分分布图 -->
+                    <div style="margin-top:16px;background:var(--bg-surface);border:1px solid var(--border-default);border-radius:var(--radius-md);padding:16px 20px;">
+                        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;font-weight:600;">评分分布</div>
+                        <div id="score-distribution" style="display:flex;align-items:flex-end;gap:6px;height:80px;">
+                        </div>
+                        <div style="display:flex;justify-content:space-between;margin-top:6px;">
+                            <span style="font-size:10px;color:var(--text-tertiary);">85分</span>
+                            <span style="font-size:10px;color:var(--text-tertiary);">90分</span>
+                            <span style="font-size:10px;color:var(--text-tertiary);">95分</span>
+                            <span style="font-size:10px;color:var(--text-tertiary);">100分</span>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+    /**
+     * 生成并填充模拟股票筛选结果表格
+     */
+    (function buildResults() {
+        var stocks = [
+            { code: '600519', name: '贵州茅台', score: 96, macd: '金叉', rsi: 62, ma: '多头排列' },
+            { code: '300750', name: '宁德时代', score: 95, macd: '金叉', rsi: 58, ma: '多头排列' },
+            { code: '002594', name: '比亚迪',   score: 94, macd: '金叉', rsi: 55, ma: '多头排列' },
+            { code: '601318', name: '中国平安', score: 93, macd: '金叉', rsi: 48, ma: '多头排列' },
+            { code: '000858', name: '五粮液',   score: 92, macd: '金叉', rsi: 51, ma: '多头排列' },
+            { code: '600036', name: '招商银行', score: 91, macd: '金叉', rsi: 45, ma: '多头排列' },
+            { code: '601012', name: '隆基绿能', score: 90, macd: '金叉', rsi: 43, ma: '多头排列' },
+            { code: '002415', name: '海康威视', score: 89, macd: '金叉', rsi: 47, ma: '多头排列' },
+            { code: '600900', name: '长江电力', score: 87, macd: '金叉', rsi: 39, ma: '多头排列' },
+            { code: '601888', name: '中国中免', score: 85, macd: '金叉', rsi: 36, ma: '多头排列' }
+        ];
+
+        var tbody = document.getElementById('results-table-body');
+        stocks.forEach(function(s, i) {
+            var scorePct = s.score;
+            var barOpacity = 0.45 + (s.score - 85) * 0.055;
+            var barColor = 'rgba(79,143,247,' + Math.min(barOpacity, 1).toFixed(2) + ')';
+            var row = document.createElement('tr');
+            row.style.cssText = 'border-bottom:1px solid var(--border-subtle);transition:background .12s;';
+            row.onmouseover = function() { this.style.background = 'var(--bg-elevated)'; };
+            row.onmouseout  = function() { this.style.background = 'transparent'; };
+            row.innerHTML =
+                '<td style="padding:7px 12px;color:var(--text-tertiary);font-family:var(--font-mono);font-size:11px;">' + (i + 1) + '</td>' +
+                '<td style="padding:7px 12px;color:var(--color-primary);font-family:var(--font-mono);font-size:12px;">' + s.code + '</td>' +
+                '<td style="padding:7px 12px;color:var(--text-primary);font-weight:600;">' + s.name + '</td>' +
+                '<td style="padding:7px 12px;">' +
+                    '<div style="display:flex;align-items:center;gap:8px;">' +
+                        '<div style="flex:1;height:6px;background:var(--bg-base);border-radius:var(--radius-full);overflow:hidden;">' +
+                            '<div style="width:' + scorePct + '%;height:100%;background:' + barColor + ';border-radius:var(--radius-full);"></div>' +
+                        '</div>' +
+                        '<span style="font-size:12px;font-weight:700;color:var(--color-primary);font-family:var(--font-mono);width:28px;text-align:right;">' + s.score + '</span>' +
+                    '</div>' +
+                '</td>' +
+                '<td style="padding:7px 12px;text-align:center;"><span style="font-size:11px;color:var(--color-up);background:var(--color-up-bg);padding:2px 8px;border-radius:var(--radius-full);font-weight:600;">' + s.macd + '</span></td>' +
+                '<td style="padding:7px 12px;text-align:center;color:var(--text-primary);font-family:var(--font-mono);">' + s.rsi + '</td>' +
+                '<td style="padding:7px 12px;text-align:center;"><span style="font-size:11px;color:var(--color-primary);background:var(--color-primary-light);padding:2px 8px;border-radius:var(--radius-full);">' + s.ma + '</span></td>';
+            tbody.appendChild(row);
+        });
+    })();
+
+    /**
+     * 生成评分分布柱状图
+     */
+    (function buildDistribution() {
+        var dist = [
+            { range: '85-87', count: 2 },
+            { range: '87-89', count: 2 },
+            { range: '89-91', count: 3 },
+            { range: '91-93', count: 2 },
+            { range: '93-95', count: 2 },
+            { range: '95-97', count: 2 },
+            { range: '97-100', count: 0 }
+        ];
+        var maxCount = Math.max.apply(null, dist.map(function(d) { return d.count; }));
+        var container = document.getElementById('score-distribution');
+        dist.forEach(function(d) {
+            var h = maxCount > 0 ? (d.count / maxCount) * 64 : 0;
+            var col = document.createElement('div');
+            col.style.cssText = 'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;';
+            var bar = document.createElement('div');
+            bar.style.cssText = 'width:100%;max-width:48px;background:var(--color-primary);border-radius:2px 2px 0 0;min-height:2px;opacity:' + (0.3 + (d.count / maxCount) * 0.7).toFixed(2) + ';';
+            bar.style.height = h + 'px';
+            var label = document.createElement('div');
+            label.style.cssText = 'font-size:10px;color:var(--text-tertiary);margin-top:4px;font-family:var(--font-mono);';
+            label.textContent = d.range;
+            col.appendChild(bar);
+            col.appendChild(label);
+            container.appendChild(col);
+        });
+    })();
+    </script>
+
+    <script>lucide.createIcons();</script>
+</body>
+</html>

@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A股盯盘每日市场概览</title>
+    <style id="theme-vars">
+/* =========================================================
+   A股盯盘与复盘系统 — Brand Design Tokens (v3)
+   Professional Investment Research Report Style
+   Reference: 半导体产业链每日简报
+   ========================================================= */
+
+:root {
+  /* ---- Color System ---- */
+  /* Brand Primary — Navy Blue */
+  --color-primary: #0f3460;
+  --color-primary-hover: #1a4a8a;
+  --color-primary-active: #0a2848;
+  --color-primary-light: #eaf0ff;
+  --color-primary-bg: #f0f4ff;
+
+  /* A-Stock Convention — Red=Up, Green=Down */
+  --color-up: #e74c3c;
+  --color-up-bg: #ffeaea;
+  --color-down: #27ae60;
+  --color-down-bg: #eaffea;
+  --color-flat: #888;
+
+  /* Semantic Status Colors */
+  --state-success: #27ae60;
+  --state-warning: #f39c12;
+  --state-error: #e74c3c;
+  --state-info: #2980b9;
+
+  /* Background & Surface — Light theme */
+  --bg-base: #f5f6f8;
+  --bg-elevated: #ffffff;
+  --bg-surface: #f8f9fb;
+  --bg-card: #ffffff;
+  --bg-hover: #f0f4ff;
+  --bg-overlay: rgba(0, 0, 0, 0.5);
+
+  /* Header Gradient */
+  --header-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+
+  /* Text */
+  --text-primary: #2c3e50;
+  --text-secondary: #555;
+  --text-tertiary: #888;
+  --text-inverse: #ffffff;
+
+  /* Border */
+  --border-default: #e8ecf1;
+  --border-subtle: #f0f0f0;
+  --border-strong: #ddd;
+
+  /* ---- Shape System ---- */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* ---- Typography ---- */
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --font-mono: "SF Mono", "JetBrains Mono", "Fira Code", "Consolas", monospace;
+
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-base: 14px;
+  --text-2xl: 22px;
+  --text-3xl: 28px;
+
+  --leading-tight: 1.2;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.7;
+
+  /* ---- Spacing ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* ---- Shadows ---- */
+  --shadow-sm: 0 1px 4px rgba(0,0,0,0.06);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+}
+
+/* Tag styles (from reference) */
+.tag-hot { background: #ffeaea; color: #e74c3c; font-size: 11px; padding: 2px 8px; border-radius: 4px; display: inline-block; }
+.tag-policy { background: #eaf6ff; color: #2980b9; font-size: 11px; padding: 2px 8px; border-radius: 4px; display: inline-block; }
+.tag-industry { background: #eaffea; color: #27ae60; font-size: 11px; padding: 2px 8px; border-radius: 4px; display: inline-block; }
+.tag-overseas { background: #fff3e0; color: #e67e22; font-size: 11px; padding: 2px 8px; border-radius: 4px; display: inline-block; }
+.tag-risk { background: #fff8e1; color: #f39c12; font-size: 11px; padding: 2px 8px; border-radius: 4px; display: inline-block; }
+
+/* Utility classes */
+.up { color: var(--color-up); }
+.down { color: var(--color-down); }
+.neutral { color: var(--color-flat); }
+
+/* Summary box gradient */
+.summary-box {
+  background: linear-gradient(135deg, #e8f0fe, #f0e8fe);
+  border-radius: 10px;
+  padding: 20px 24px;
+}
+
+/* Risk box */
+.risk-box {
+  background: #fff8e1;
+  border-left: 4px solid #f39c12;
+  border-radius: 8px;
+  padding: 16px 20px;
+}
+    </style>
+
+    <!-- ECharts CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+
+    <style>
+    /* =========================================================
+       Dashboard Page Styles — Pure CSS (No Tailwind)
+       ========================================================= */
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+      background: #f5f6f8;
+      color: #2c3e50;
+      line-height: 1.7;
+      font-size: 14px;
+    }
+
+    /* Page container */
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px 20px;
+    }
+
+    /* White card base */
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      padding: 28px 32px;
+      margin-bottom: 20px;
+    }
+
+    /* Card heading with numbered prefix */
+    .card-heading {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1a1a2e;
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #e8ecf1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-heading .section-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      background: #0f3460;
+      color: #fff;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    /* ---- Header Card (gradient) ---- */
+    .header-card {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      border-radius: 16px;
+      padding: 36px 40px;
+      color: #fff;
+      margin-bottom: 20px;
+    }
+
+    .header-card h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      letter-spacing: 1px;
+    }
+
+    .header-card .subtitle {
+      font-size: 15px;
+      color: rgba(255,255,255,0.75);
+      margin-bottom: 12px;
+    }
+
+    .header-card .date-info {
+      font-size: 13px;
+      color: rgba(255,255,255,0.6);
+    }
+
+    /* ---- Market Index Grid ---- */
+    .market-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .market-item {
+      background: #f8f9fb;
+      border-radius: 10px;
+      padding: 20px 16px;
+      text-align: center;
+    }
+
+    .market-item .label {
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 6px;
+    }
+
+    .market-item .value {
+      font-size: 22px;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin-bottom: 4px;
+    }
+
+    .market-item .change {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .market-item .volume {
+      font-size: 11px;
+      color: #888;
+    }
+
+    /* Summary bar below indices */
+    .summary-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #f8f9fb;
+      border-radius: 10px;
+      padding: 14px 20px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .summary-bar .stat-item {
+      font-size: 13px;
+      color: #555;
+    }
+
+    .summary-bar .stat-item .stat-label {
+      color: #888;
+      margin-right: 4px;
+    }
+
+    .summary-bar .stat-item .stat-value {
+      font-weight: 700;
+      color: #1a1a2e;
+    }
+
+    /* ---- Table styles ---- */
+    .leader-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .leader-table thead th {
+      background: #0f3460;
+      color: #fff;
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .leader-table thead th:first-child {
+      border-radius: 8px 0 0 0;
+    }
+
+    .leader-table thead th:last-child {
+      border-radius: 0 8px 0 0;
+    }
+
+    .leader-table tbody td {
+      padding: 10px 14px;
+      border-bottom: 1px solid #eee;
+      font-size: 13px;
+    }
+
+    .leader-table tbody tr:hover {
+      background: #f8f9fb;
+    }
+
+    .leader-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* ---- Sector heatmap grid ---- */
+    .hotspot-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+
+    .hotspot-card {
+      background: #f8f9fb;
+      border-left: 4px solid #0f3460;
+      border-radius: 8px;
+      padding: 16px 18px;
+      transition: box-shadow 0.2s;
+    }
+
+    .hotspot-card:hover {
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .hotspot-card.leading {
+      border-left-color: #e74c3c;
+    }
+
+    .hotspot-card.lagging {
+      border-left-color: #27ae60;
+    }
+
+    .hotspot-card .sector-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin-bottom: 4px;
+    }
+
+    .hotspot-card .sector-change {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .hotspot-card .sector-desc {
+      font-size: 11px;
+      color: #888;
+    }
+
+    /* ---- Top gainers event list ---- */
+    .event-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .event-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    .event-item:last-child {
+      border-bottom: none;
+    }
+
+    .event-item .rank-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .event-item .rank-badge.top3 {
+      background: #e74c3c;
+    }
+
+    .event-item .rank-badge.normal {
+      background: #0f3460;
+    }
+
+    .event-item .stock-info {
+      flex: 1;
+    }
+
+    .event-item .stock-name {
+      font-weight: 700;
+      font-size: 14px;
+      color: #1a1a2e;
+    }
+
+    .event-item .stock-code {
+      font-size: 11px;
+      color: #888;
+      margin-left: 6px;
+    }
+
+    .event-item .stock-reason {
+      font-size: 12px;
+      color: #888;
+      margin-top: 2px;
+    }
+
+    .event-item .stock-change {
+      font-size: 15px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    /* ---- Emotion cycle grid ---- */
+    .emo-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    .emo-item {
+      background: #f8f9fb;
+      border-radius: 10px;
+      padding: 20px 16px;
+      text-align: center;
+    }
+
+    .emo-item .emo-label {
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 8px;
+    }
+
+    .emo-item .emo-value {
+      font-size: 22px;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin-bottom: 4px;
+    }
+
+    .emo-item .emo-tag {
+      display: inline-block;
+      font-size: 11px;
+      padding: 2px 10px;
+      border-radius: 99px;
+      font-weight: 600;
+    }
+
+    .emo-item .emo-tag.hot {
+      background: #ffeaea;
+      color: #e74c3c;
+    }
+
+    .emo-item .emo-tag.warm {
+      background: #fff3e0;
+      color: #e67e22;
+    }
+
+    .emo-item .emo-tag.neutral-tag {
+      background: #f0f0f0;
+      color: #555;
+    }
+
+    /* ---- Chart container ---- */
+    .chart-container {
+      width: 100%;
+      height: 380px;
+    }
+
+    /* ---- Footer ---- */
+    .footer {
+      text-align: center;
+      font-size: 12px;
+      color: #888;
+      padding: 20px 0 10px;
+      line-height: 1.8;
+    }
+
+    /* Mini sparkline description */
+    .mini-trend {
+      font-size: 11px;
+      color: #888;
+      max-width: 120px;
+    }
+
+    /* Section spacing */
+    .section-gap {
+      height: 4px;
+    }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <!-- ==================== Header ==================== -->
+        <div class="header-card">
+            <h1>A股盯盘每日市场概览</h1>
+            <div class="subtitle">覆盖主要指数、板块资金流向、自选股监控</div>
+            <div class="date-info">2026年7月9日（周四）| 数据截至收盘</div>
+        </div>
+
+        <!-- ==================== Section 一、主要指数 ==================== -->
+        <div class="card">
+            <div class="card-heading">
+                <span class="section-num">一</span>
+                主要指数
+            </div>
+
+            <!-- 4-column index grid -->
+            <div class="market-grid">
+                <div class="market-item">
+                    <div class="label">上证指数</div>
+                    <div class="value">3,200.50</div>
+                    <div class="change up">+0.85%</div>
+                    <div class="volume">成交额 4,256亿</div>
+                </div>
+                <div class="market-item">
+                    <div class="label">深证成指</div>
+                    <div class="value">10,200.30</div>
+                    <div class="change up">+1.20%</div>
+                    <div class="volume">成交额 5,891亿</div>
+                </div>
+                <div class="market-item">
+                    <div class="label">创业板指</div>
+                    <div class="value">2,150.80</div>
+                    <div class="change down">-0.35%</div>
+                    <div class="volume">成交额 2,134亿</div>
+                </div>
+                <div class="market-item">
+                    <div class="label">科创50</div>
+                    <div class="value">980.60</div>
+                    <div class="change up">+0.52%</div>
+                    <div class="volume">成交额 1,025亿</div>
+                </div>
+            </div>
+
+            <!-- Summary bar -->
+            <div class="summary-bar">
+                <div class="stat-item">
+                    <span class="stat-label">成交额汇总</span>
+                    <span class="stat-value">13,306亿</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">涨跌比</span>
+                    <span class="stat-value up">2856 : 1923</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">北向资金净流入</span>
+                    <span class="stat-value up">+28.5亿</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">涨停</span>
+                    <span class="stat-value up">45家</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== Section 二、板块资金流向 ==================== -->
+        <div class="card">
+            <div class="card-heading">
+                <span class="section-num">二</span>
+                板块资金流向
+            </div>
+            <div id="sectorFlowChart" class="chart-container"></div>
+        </div>
+
+        <!-- ==================== Section 三、板块涨幅热力图 ==================== -->
+        <div class="card">
+            <div class="card-heading">
+                <span class="section-num">三</span>
+                板块涨幅热力图
+            </div>
+
+            <div class="hotspot-grid">
+                <!-- Leading sectors (red border) -->
+                <div class="hotspot-card leading">
+                    <div class="sector-name">科技</div>
+                    <div class="sector-change up">+2.30%</div>
+                    <div class="sector-desc">AI芯片、半导体设备领涨</div>
+                </div>
+                <div class="hotspot-card leading">
+                    <div class="sector-name">银行</div>
+                    <div class="sector-change up">+1.85%</div>
+                    <div class="sector-desc">国有大行集体走强</div>
+                </div>
+                <div class="hotspot-card leading">
+                    <div class="sector-name">新能源</div>
+                    <div class="sector-change up">+1.50%</div>
+                    <div class="sector-desc">光伏、锂电反弹</div>
+                </div>
+
+                <!-- Neutral sectors -->
+                <div class="hotspot-card">
+                    <div class="sector-name">消费</div>
+                    <div class="sector-change up">+0.75%</div>
+                    <div class="sector-desc">白酒、食品稳定</div>
+                </div>
+                <div class="hotspot-card">
+                    <div class="sector-name">有色</div>
+                    <div class="sector-change up">+0.42%</div>
+                    <div class="sector-desc">铜铝震荡</div>
+                </div>
+                <div class="hotspot-card">
+                    <div class="sector-name">券商</div>
+                    <div class="sector-change down">-0.18%</div>
+                    <div class="sector-desc">板块分化</div>
+                </div>
+
+                <!-- Lagging sectors (green border) -->
+                <div class="hotspot-card lagging">
+                    <div class="sector-name">医药</div>
+                    <div class="sector-change down">-0.65%</div>
+                    <div class="sector-desc">集采情绪压制</div>
+                </div>
+                <div class="hotspot-card lagging">
+                    <div class="sector-name">地产</div>
+                    <div class="sector-change down">-0.85%</div>
+                    <div class="sector-desc">政策落地观望</div>
+                </div>
+                <div class="hotspot-card lagging">
+                    <div class="sector-name">军工</div>
+                    <div class="sector-change down">-1.20%</div>
+                    <div class="sector-desc">订单预期下调</div>
+                </div>
+
+                <!-- Additional sectors -->
+                <div class="hotspot-card">
+                    <div class="sector-name">传媒</div>
+                    <div class="sector-change down">-0.38%</div>
+                    <div class="sector-desc">游戏版号提振有限</div>
+                </div>
+                <div class="hotspot-card">
+                    <div class="sector-name">汽车</div>
+                    <div class="sector-change up">+0.55%</div>
+                    <div class="sector-desc">新能源车销量超预期</div>
+                </div>
+                <div class="hotspot-card">
+                    <div class="sector-name">钢铁</div>
+                    <div class="sector-change neutral">+0.05%</div>
+                    <div class="sector-desc">平淡无亮点</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== Section 四、自选股监控 ==================== -->
+        <div class="card">
+            <div class="card-heading">
+                <span class="section-num">四</span>
+                自选股监控
+            </div>
+
+            <table class="leader-table">
+                <thead>
+                    <tr>
+                        <th>代码</th>
+                        <th>名称</th>
+                        <th>现价</th>
+                        <th>涨跌幅</th>
+                        <th>成交额</th>
+                        <th>近5日走势</th>
+                      </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="font-family: var(--font-mono);">000001.SZ</td>
+                        <td style="font-weight: 700;">平安银行</td>
+                        <td>11.25</td>
+                        <td class="up" style="font-weight: 700;">+1.35%</td>
+                        <td>32.5亿</td>
+                        <td class="mini-trend">震荡上行，突破10日均线</td>
+                    </tr>
+                    <tr>
+                        <td style="font-family: var(--font-mono);">600519.SH</td>
+                        <td style="font-weight: 700;">贵州茅台</td>
+                        <td>1,688.00</td>
+                        <td class="up" style="font-weight: 700;">+0.52%</td>
+                        <td>48.2亿</td>
+                        <td class="mini-trend">缩量整理，箱体运行</td>
+                    </tr>
+                    <tr>
+                        <td style="font-family: var(--font-mono);">000333.SZ</td>
+                        <td style="font-weight: 700;">美的集团</td>
+                        <td>68.50</td>
+                        <td class="down" style="font-weight: 700;">-0.45%</td>
+                        <td>18.6亿</td>
+                        <td class="mini-trend">回调后企稳，关注支撑位</td>
+                    </tr>
+                    <tr>
+                        <td style="font-family: var(--font-mono);">601318.SH</td>
+                        <td style="font-weight: 700;">中国平安</td>
+                        <td>48.20</td>
+                        <td class="up" style="font-weight: 700;">+0.85%</td>
+                        <td>25.3亿</td>
+                        <td class="mini-trend">放量反弹，站上5日线</td>
+                    </tr>
+                    <tr>
+                        <td style="font-family: var(--font-mono);">600036.SH</td>
+                        <td style="font-weight: 700;">招商银行</td>
+                        <td>35.80</td>
+                        <td class="up" style="font-weight: 700;">+1.12%</td>
+                        <td>21.8亿</td>
+                        <td class="mini-trend">稳步攀升，板块领涨</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ==================== Section 五、涨幅榜 TOP10 ==================== -->
+        <div class="card">
+            <div class="card-heading">
+                <span class="section-num">五</span>
+                涨幅榜 TOP10
+            </div>
+
+            <ul class="event-list">
+                <li class="event-item">
+                    <span class="rank-badge top3">1</span>
+                    <div class="stock-info">
+                        <span class="stock-name">中芯国际</span>
+                        <span class="stock-code">688981.SH</span>
+                        <div class="stock-reason">AI芯片需求爆发，产能利用率满载</div>
+                    </div>
+                    <span class="stock-change up">+20.01%</span>
+                </li>
+                <li class="event-item">
+                    <span class="rank-badge top3">2</span>
+                    <div class="stock-info">
+                        <span class="stock-name">北方华创</span>
+                        <span class="stock-code">002371.SZ</span>
+                        <div class="stock-reason">半导体设备国产替代加速</div>
+                    </div>
+                    <span class="stock-change up">+10.02%</span>
+                </li>
+                <li class="event-item">
+                    <span class="rank-badge top3">3</span>
+                    <div class="stock-info">
+                        <span class="stock-name">寒武纪</span>
+                        <span class="stock-code">688256.SH</span>
+                        <div class="stock-reason">AI算力概念持续发酵</div>
+                    </div>
+                    <span class="stock-change up">+10.00%</span>
+                </li>
+                <li class="event-item">
+                    <span class="rank-badge normal">4</span>
+                    <div class="stock-info">
+                        <span class="stock-name">宁德时代</span>
+                        <span class="stock-code">300750.SZ</span>
+                        <div class="stock-reason">储能订单超预期，海外扩张加速</div>
+                    </div>
+                    <span class="stock-change up">+8.35%</span>
+                </li>
+                <li class="event-item">
+                    <span class="rank-badge normal">5</span>
+                    <div class="stock-info">
+                        <span class="stock-name">比亚迪</span>
+                        <span class="stock-code">002594.SZ</span>
+                        <div class="stock-reason">6月新能源车销量再创新高</div>
+                    </div>
+                    <span class="stock-change up">+7.82%</span>
+                </li>
+                <li class="event-item">
+                    <span class="rank-badge normal">6</span>
+                    <div class="stock-info">
+                        <span class="stock-name">招商银行</span>
+                        <span class="stock-code">600036.SH</span>
+                        <div class="stock-reason">中期分红预案超预期</div>
+                    </div>
+                    <span class="stock-change up">+5.60%</span>
+                </li>
+                <li class="event-item">
+                    <span class="rank-badge normal">7</span>
+                    <div class="stock-info">
+                        <span class="stock-name">隆基绿能</span>
+                        <span class="stock-code">601012.SH</span>
+                        <div class="stock-reason">光伏组件出口数据回暖</div>
+                    </div>
+                    <span class="stock-change up">+4.95%</span>
+                </li>
+                <li class="event-item">
+                    <span class="rank-badge normal">8</span>
+                    <div class="stock-info">
+                        <span class="stock-name">紫光国微</span>
+                        <span class="stock-code">002049.SZ</span>
+                        <div class="stock-reason">特种芯片订单放量</div>
+                    </div>
+                    <span class="stock-change up">+4.58%</span>
+                </li>
+                <li class="event-item">
+                    <span class="rank-badge normal">9</span>
+                    <div class="stock-info">
+                        <span class="stock-name">海光信息</span>
+                        <span class="stock-code">688041.SH</span>
+                        <div class="stock-reason">国产CPU服务器采购放量</div>
+                    </div>
+                    <span class="stock-change up">+4.22%</span>
+                </li>
+                <li class="event-item">
+                    <span class="rank-badge normal">10</span>
+                    <div class="stock-info">
+                        <span class="stock-name">工商银行</span>
+                        <span class="stock-code">601398.SH</span>
+                        <div class="stock-reason">高股息策略持续受青睐</div>
+                    </div>
+                    <span class="stock-change up">+3.88%</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- ==================== Section 六、市场情绪指标 ==================== -->
+        <div class="card">
+            <div class="card-heading">
+                <span class="section-num">六</span>
+                市场情绪指标
+            </div>
+
+            <div class="emo-grid">
+                <div class="emo-item">
+                    <div class="emo-label">涨停家数</div>
+                    <div class="emo-value">45<span style="font-size: 14px; font-weight: 400;">家</span></div>
+                    <span class="emo-tag warm">活跃</span>
+                </div>
+                <div class="emo-item">
+                    <div class="emo-label">封板率</div>
+                    <div class="emo-value">77<span style="font-size: 14px; font-weight: 400;">%</span></div>
+                    <span class="emo-tag warm">偏高</span>
+                </div>
+                <div class="emo-item">
+                    <div class="emo-label">连板高度</div>
+                    <div class="emo-value">5<span style="font-size: 14px; font-weight: 400;">板</span></div>
+                    <span class="emo-tag neutral-tag">中等</span>
+                </div>
+                <div class="emo-item">
+                    <div class="emo-label">市场温度</div>
+                    <div class="emo-value" style="color: #e74c3c;">偏热</div>
+                    <span class="emo-tag hot">过热预警</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== Section 七、综合研判 ==================== -->
+        <div class="card">
+            <div class="card-heading">
+                <span class="section-num">七</span>
+                综合研判
+            </div>
+
+            <div class="summary-box" style="margin-bottom: 16px;">
+                <p style="font-size: 14px; line-height: 1.8; color: #2c3e50;">
+                    <strong>整体研判：</strong>今日A股市场整体偏强运行，上证指数站稳3200点关口，深证成指表现更优。科技板块在AI产业链带动下全线走强，半导体设备、AI芯片等细分方向领涨两市。银行板块受中期分红预期提振，高股息策略持续受到资金青睐。新能源板块出现超跌反弹迹象，光伏和锂电龙头均有不错涨幅。市场成交额合计超过1.3万亿，较前一交易日放量约15%，北向资金净流入28.5亿元，显示外资对A股信心有所恢复。
+                </p>
+                <p style="font-size: 14px; line-height: 1.8; color: #2c3e50; margin-top: 12px;">
+                    <strong>后市展望：</strong>短期关注科技主线的持续性以及量能能否维持万亿以上水平。若量能萎缩，市场可能重回轮动格局。建议关注中报业绩确定性高的方向，如AI算力、高端制造及高股息红利资产。军工和地产板块短期承压，需等待催化因素出现。
+                </p>
+            </div>
+
+            <div class="risk-box">
+                <div style="font-size: 14px; font-weight: 700; color: #f39c12; margin-bottom: 8px;">
+                    ⚠ 风险提示
+                </div>
+                <ul style="font-size: 13px; color: #2c3e50; line-height: 1.9; padding-left: 18px;">
+                    <li>中美贸易摩擦升级风险，科技板块可能面临外部冲击</li>
+                    <li>市场短期涨幅较大，存在技术性回调需求，注意仓位管理</li>
+                    <li>半年报窗口期临近，警惕业绩不及预期的个股"杀估值"</li>
+                    <li>房地产销售数据未见明显改善，相关产业链风险尚未出清</li>
+                    <li>美联储议息会议在即，关注全球流动性变化对A股的影响</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- ==================== Footer ==================== -->
+        <div class="footer">
+            数据来源：Wind、同花顺iFinD、东方财富 | 本页面仅供参考，不构成投资建议<br>
+            以上数据为模拟演示数据，实际行情请以交易所官方数据为准<br>
+            &copy; 2026 A股盯盘与复盘系统
+        </div>
+
+    </div>
+
+    <!-- ==================== ECharts Scripts ==================== -->
+    <script>
+    /**
+     * 初始化板块资金流向柱状图
+     * 红色表示净流入，绿色表示净流出
+     */
+    (function initSectorFlowChart() {
+        var chartDom = document.getElementById('sectorFlowChart');
+        if (!chartDom) return;
+
+        var myChart = echarts.init(chartDom);
+
+        // 板块名称及净流入数据（亿元）
+        var sectors = ['科技', '银行', '新能源', '消费', '有色', '券商', '地产', '医药', '军工', '传媒'];
+        var values  = [42.5, 18.3, 15.8, 12.1, 8.5, -5.2, -8.3, -12.6, -15.1, -18.7];
+
+        // 根据正负值分配颜色
+        var barColors = values.map(function(v) {
+            return v >= 0 ? '#e74c3c' : '#27ae60';
+        });
+
+        var option = {
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: { type: 'shadow' },
+                formatter: function(params) {
+                    var p = params[0];
+                    var sign = p.value >= 0 ? '+' : '';
+                    return p.name + '<br/>净流入: <b>' + sign + p.value + '</b> 亿元';
+                }
+            },
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '3%',
+                top: '8%',
+                containLabel: true
+            },
+            xAxis: {
+                type: 'value',
+                axisLabel: {
+                    formatter: function(v) { return v + '亿'; },
+                    color: '#888',
+                    fontSize: 12
+                },
+                splitLine: {
+                    lineStyle: { color: '#eee', type: 'dashed' }
+                }
+            },
+            yAxis: {
+                type: 'category',
+                data: sectors,
+                axisLabel: {
+                    color: '#2c3e50',
+                    fontSize: 13,
+                    fontWeight: 600
+                },
+                axisTick: { show: false },
+                axisLine: { show: false }
+            },
+            series: [{
+                type: 'bar',
+                data: values.map(function(v, i) {
+                    return {
+                        value: v,
+                        itemStyle: {
+                            color: barColors[i],
+                            borderRadius: i === values.length - 1 || i === 0 ? [0, 4, 4, 0] : [0, 0, 0, 0]
+                        }
+                    };
+                }),
+                barWidth: '50%',
+                label: {
+                    show: true,
+                    position: function(params) {
+                        return params.value >= 0 ? 'right' : 'left';
+                    },
+                    formatter: function(params) {
+                        return (params.value >= 0 ? '+' : '') + params.value;
+                    },
+                    color: '#2c3e50',
+                    fontSize: 12,
+                    fontWeight: 600
+                }
+            }]
+        };
+
+        myChart.setOption(option);
+
+        // 响应窗口大小变化
+        window.addEventListener('resize', function() {
+            myChart.resize();
+        });
+    })();
+    </script>
+</body>
+</html>

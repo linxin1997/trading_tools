@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多因子智能选股报告</title>
+    <style id="theme-vars">
+/* =========================================================
+   A股盯盘与复盘系统 — Brand Design Tokens (v3)
+   Professional Investment Research Report Style
+   Reference: 半导体产业链每日简报
+   ========================================================= */
+
+:root {
+  /* ---- Color System ---- */
+  /* Brand Primary — Navy Blue */
+  --color-primary: #0f3460;
+  --color-primary-hover: #1a4a8a;
+  --color-primary-active: #0a2848;
+  --color-primary-light: #eaf0ff;
+  --color-primary-bg: #f0f4ff;
+
+  /* A-Stock Convention — Red=Up, Green=Down */
+  --color-up: #e74c3c;
+  --color-up-bg: #ffeaea;
+  --color-down: #27ae60;
+  --color-down-bg: #eaffea;
+  --color-flat: #888;
+
+  /* Semantic Status Colors */
+  --state-success: #27ae60;
+  --state-warning: #f39c12;
+  --state-error: #e74c3c;
+  --state-info: #2980b9;
+
+  /* Background & Surface — Light theme */
+  --bg-base: #f5f6f8;
+  --bg-elevated: #ffffff;
+  --bg-surface: #f8f9fb;
+  --bg-card: #ffffff;
+  --bg-hover: #f0f4ff;
+  --bg-overlay: rgba(0, 0, 0, 0.5);
+
+  /* Header Gradient */
+  --header-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+
+  /* Text */
+  --text-primary: #2c3e50;
+  --text-secondary: #555;
+  --text-tertiary: #888;
+  --text-inverse: #ffffff;
+
+  /* Border */
+  --border-default: #e8ecf1;
+  --border-subtle: #f0f0f0;
+  --border-strong: #ddd;
+
+  /* ---- Shape System ---- */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* ---- Typography ---- */
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --font-mono: "SF Mono", "JetBrains Mono", "Fira Code", "Consolas", monospace;
+
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-base: 14px;
+  --text-lg: 15px;
+  --text-xl: 18px;
+  --text-2xl: 22px;
+  --text-3xl: 28px;
+
+  --leading-tight: 1.2;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.7;
+
+  /* ---- Spacing ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* ---- Shadows ---- */
+  --shadow-sm: 0 1px 4px rgba(0,0,0,0.06);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+}
+
+/* Tag styles (from reference) */
+.tag-hot { background: #ffeaea; color: #e74c3c; font-size: 11px; padding: 2px 8px; border-radius: 4px; display: inline-block; }
+.tag-policy { background: #eaf6ff; color: #2980b9; font-size: 11px; padding: 2px 8px; border-radius: 4px; display: inline-block; }
+.tag-industry { background: #eaffea; color: #27ae60; font-size: 11px; padding: 2px 8px; border-radius: 4px; display: inline-block; }
+.tag-overseas { background: #fff3e0; color: #e67e22; font-size: 11px; padding: 2px 8px; border-radius: 4px; display: inline-block; }
+.tag-risk { background: #fff8e1; color: #f39c12; font-size: 11px; padding: 2px 8px; border-radius: 4px; display: inline-block; }
+
+/* Utility classes */
+.up { color: var(--color-up); }
+.down { color: var(--color-down); }
+.neutral { color: var(--color-flat); }
+
+/* Summary box gradient */
+.summary-box {
+  background: linear-gradient(135deg, #e8f0fe, #f0e8fe);
+  border-radius: 10px;
+  padding: 20px 24px;
+}
+
+/* Risk box */
+.risk-box {
+  background: #fff8e1;
+  border-left: 4px solid #f39c12;
+  border-radius: 8px;
+  padding: 16px 20px;
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-primary: var(--color-primary);
+  }
+  @layer base {
+    body { background: var(--color-background); color: var(--color-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body style="background: #f5f6f8; color: #2c3e50; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif; margin: 0; padding: 0; line-height: 1.6;">
+
+    <!-- ECharts CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+
+    <!-- Page-level styles (pure CSS, no Tailwind) -->
+    <style>
+        /* ---- Reset & Base ---- */
+        * { box-sizing: border-box; }
+        body { background: #f5f6f8; color: #2c3e50; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif; margin: 0; padding: 0; line-height: 1.6; }
+
+        /* ---- Container ---- */
+        .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px 48px; }
+
+        /* ---- Header ---- */
+        .report-header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: #fff; border-radius: 16px; padding: 36px 40px; margin-bottom: 32px; }
+        .report-header h1 { font-size: 28px; font-weight: 700; margin: 0 0 8px; letter-spacing: 1px; }
+        .report-header .subtitle { font-size: 15px; color: rgba(255,255,255,0.8); margin: 0 0 16px; }
+        .report-header .date { font-size: 13px; color: rgba(255,255,255,0.6); margin: 0; }
+
+        /* ---- Card ---- */
+        .card { background: #fff; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); padding: 28px 32px; margin-bottom: 28px; }
+        .card-heading { font-size: 20px; font-weight: 700; color: #1a1a2e; margin: 0 0 20px; padding-bottom: 12px; border-bottom: 1px solid #eee; }
+
+        /* ---- Event / Criteria Item ---- */
+        .criteria-list { list-style: none; padding: 0; margin: 0; }
+        .criteria-item { background: #f8f9fb; border-radius: 10px; padding: 16px 20px; margin-bottom: 12px; display: flex; align-items: flex-start; gap: 14px; }
+        .criteria-item:last-child { margin-bottom: 0; }
+        .criteria-num { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 8px; background: #0f3460; color: #fff; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+        .criteria-body { flex: 1; }
+        .criteria-label { font-size: 14px; font-weight: 600; color: #1a1a2e; margin-bottom: 4px; }
+        .criteria-desc { font-size: 13px; color: #555; line-height: 1.6; margin: 0; }
+
+        /* ---- Factor Weight Bars ---- */
+        .weight-section { margin-top: 24px; }
+        .weight-title { font-size: 15px; font-weight: 600; color: #1a1a2e; margin: 0 0 16px; }
+        .weight-item { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+        .weight-item:last-child { margin-bottom: 0; }
+        .weight-label { width: 90px; font-size: 13px; color: #555; text-align: right; flex-shrink: 0; }
+        .weight-bar-bg { flex: 1; height: 10px; background: #eef0f4; border-radius: 9999px; overflow: hidden; }
+        .weight-bar-fill { height: 100%; border-radius: 9999px; background: #0f3460; transition: width 0.6s ease; }
+        .weight-value { width: 40px; font-size: 13px; font-weight: 600; color: #1a1a2e; text-align: right; flex-shrink: 0; }
+
+        /* ---- Leader Table ---- */
+        .leader-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .leader-table thead th { background: #0f3460; color: #fff; font-weight: 600; padding: 12px 14px; text-align: center; white-space: nowrap; }
+        .leader-table thead th:first-child { border-radius: 8px 0 0 0; }
+        .leader-table thead th:last-child { border-radius: 0 8px 0 0; }
+        .leader-table tbody td { padding: 12px 14px; text-align: center; border-bottom: 1px solid #eee; }
+        .leader-table tbody tr:hover { background: #f0f4ff; }
+        .leader-table .rank { font-weight: 700; color: #1a1a2e; }
+        .leader-table .code { font-family: 'SF Mono', 'Consolas', monospace; color: #555; font-size: 12px; }
+        .leader-table .name { font-weight: 600; color: #1a1a2e; }
+        .leader-table .price { font-family: 'SF Mono', 'Consolas', monospace; font-weight: 500; }
+        .leader-table .change-up { color: #e74c3c; font-weight: 600; }
+        .leader-table .change-down { color: #27ae60; font-weight: 600; }
+        .leader-table .signal { color: #e74c3c; font-weight: 500; }
+        .leader-table .rsi { font-family: 'SF Mono', 'Consolas', monospace; }
+        .leader-table .score-high { color: #e74c3c; font-weight: 700; font-size: 15px; }
+        .leader-table .score-mid { color: #0f3460; font-weight: 700; font-size: 15px; }
+        .leader-table .reason-cell { text-align: left; min-width: 180px; }
+
+        /* ---- Tag Pills ---- */
+        .tag-pill { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 4px; margin: 1px 3px; white-space: nowrap; }
+
+        /* ---- ECharts Container ---- */
+        .chart-container { width: 100%; height: 320px; margin-top: 16px; }
+        .chart-interpretation { margin-top: 16px; font-size: 13px; color: #555; line-height: 1.7; }
+
+        /* ---- Summary Box ---- */
+        .summary-box { background: linear-gradient(135deg, #e8f0fe, #f0e8fe); border-radius: 10px; padding: 20px 24px; margin-bottom: 20px; }
+        .summary-box p { margin: 0; font-size: 14px; color: #2c3e50; line-height: 1.7; }
+
+        /* ---- Strategy Cards (hotspot-row) ---- */
+        .strategy-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+        .strategy-card { background: #f8f9fb; border-radius: 10px; padding: 20px; text-align: center; }
+        .strategy-card .strategy-type { font-size: 15px; font-weight: 700; color: #1a1a2e; margin-bottom: 8px; }
+        .strategy-card .strategy-desc { font-size: 13px; color: #555; line-height: 1.6; }
+
+        /* ---- Risk Box ---- */
+        .risk-box { background: #fff8e1; border-left: 4px solid #f39c12; border-radius: 8px; padding: 16px 20px; margin-top: 20px; }
+        .risk-box .risk-title { font-size: 14px; font-weight: 700; color: #f39c12; margin: 0 0 8px; }
+        .risk-box .risk-text { font-size: 13px; color: #555; line-height: 1.7; margin: 0; }
+
+        /* ---- Footer ---- */
+        .report-footer { text-align: center; font-size: 12px; color: #888; margin-top: 32px; padding-top: 20px; border-top: 1px solid #e8ecf1; line-height: 1.7; }
+    </style>
+
+    <div class="container">
+
+        <!-- ========== Header ========== -->
+        <div class="report-header">
+            <h1>多因子智能选股报告</h1>
+            <p class="subtitle">基于技术面、资金面、情绪面的综合量化筛选</p>
+            <p class="date">2026年7月9日</p>
+        </div>
+
+        <!-- ========== Section 一、筛选条件说明 ========== -->
+        <div class="card">
+            <h2 class="card-heading">一、筛选条件说明</h2>
+
+            <ul class="criteria-list">
+                <!-- 技术面 -->
+                <li class="criteria-item">
+                    <span class="criteria-num">1</span>
+                    <div class="criteria-body">
+                        <div class="criteria-label">技术面</div>
+                        <p class="criteria-desc">MACD金叉 + RSI(14) &lt; 70 + 5日均线上穿20日均线</p>
+                    </div>
+                </li>
+                <!-- 资金面 -->
+                <li class="criteria-item">
+                    <span class="criteria-num">2</span>
+                    <div class="criteria-body">
+                        <div class="criteria-label">资金面</div>
+                        <p class="criteria-desc">近5日主力净流入 &gt; 0</p>
+                    </div>
+                </li>
+                <!-- 情绪面 -->
+                <li class="criteria-item">
+                    <span class="criteria-num">3</span>
+                    <div class="criteria-body">
+                        <div class="criteria-label">情绪面</div>
+                        <p class="criteria-desc">近期有产业催化或政策利好</p>
+                    </div>
+                </li>
+            </ul>
+
+            <!-- Factor weight bars -->
+            <div class="weight-section">
+                <p class="weight-title">因子权重分配</p>
+
+                <div class="weight-item">
+                    <span class="weight-label">MACD信号</span>
+                    <div class="weight-bar-bg"><div class="weight-bar-fill" style="width: 30%;"></div></div>
+                    <span class="weight-value">30%</span>
+                </div>
+                <div class="weight-item">
+                    <span class="weight-label">RSI指标</span>
+                    <div class="weight-bar-bg"><div class="weight-bar-fill" style="width: 25%;"></div></div>
+                    <span class="weight-value">25%</span>
+                </div>
+                <div class="weight-item">
+                    <span class="weight-label">均线形态</span>
+                    <div class="weight-bar-bg"><div class="weight-bar-fill" style="width: 25%;"></div></div>
+                    <span class="weight-value">25%</span>
+                </div>
+                <div class="weight-item">
+                    <span class="weight-label">成交量</span>
+                    <div class="weight-bar-bg"><div class="weight-bar-fill" style="width: 20%;"></div></div>
+                    <span class="weight-value">20%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== Section 二、筛选结果 TOP10 ========== -->
+        <div class="card">
+            <h2 class="card-heading">二、筛选结果 TOP10</h2>
+
+            <div style="overflow-x: auto;">
+                <table class="leader-table">
+                    <thead>
+                        <tr>
+                            <th>排名</th>
+                            <th>代码</th>
+                            <th>名称</th>
+                            <th>现价</th>
+                            <th>涨跌幅</th>
+                            <th>MACD信号</th>
+                            <th>RSI(14)</th>
+                            <th>综合评分</th>
+                            <th>推荐理由</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- 1. 贵州茅台 -->
+                        <tr>
+                            <td class="rank">1</td>
+                            <td class="code">600519.SH</td>
+                            <td class="name">贵州茅台</td>
+                            <td class="price">1688.00</td>
+                            <td class="change-up">+0.52%</td>
+                            <td class="signal">金叉</td>
+                            <td class="rsi">45.2</td>
+                            <td class="score-high">96</td>
+                            <td class="reason-cell"><span class="tag-pill tag-hot">消费龙头</span> <span class="tag-pill tag-overseas">北向加仓</span></td>
+                        </tr>
+                        <!-- 2. 平安银行 -->
+                        <tr>
+                            <td class="rank">2</td>
+                            <td class="code">000001.SZ</td>
+                            <td class="name">平安银行</td>
+                            <td class="price">11.25</td>
+                            <td class="change-up">+1.35%</td>
+                            <td class="signal">金叉</td>
+                            <td class="rsi">38.7</td>
+                            <td class="score-high">94</td>
+                            <td class="reason-cell"><span class="tag-pill tag-industry">金融修复</span> <span class="tag-pill tag-policy">量价齐升</span></td>
+                        </tr>
+                        <!-- 3. 中国平安 -->
+                        <tr>
+                            <td class="rank">3</td>
+                            <td class="code">601318.SH</td>
+                            <td class="name">中国平安</td>
+                            <td class="price">48.20</td>
+                            <td class="change-up">+0.85%</td>
+                            <td class="signal">金叉</td>
+                            <td class="rsi">42.1</td>
+                            <td class="score-high">92</td>
+                            <td class="reason-cell"><span class="tag-pill tag-industry">保险基本面改善</span></td>
+                        </tr>
+                        <!-- 4. 招商银行 -->
+                        <tr>
+                            <td class="rank">4</td>
+                            <td class="code">600036.SH</td>
+                            <td class="name">招商银行</td>
+                            <td class="price">35.80</td>
+                            <td class="change-up">+1.12%</td>
+                            <td class="signal">金叉</td>
+                            <td class="rsi">35.8</td>
+                            <td class="score-high">91</td>
+                            <td class="reason-cell"><span class="tag-pill tag-industry">零售银行标杆</span></td>
+                        </tr>
+                        <!-- 5. 五粮液 -->
+                        <tr>
+                            <td class="rank">5</td>
+                            <td class="code">000858.SZ</td>
+                            <td class="name">五粮液</td>
+                            <td class="price">162.30</td>
+                            <td class="change-up">+4.71%</td>
+                            <td class="signal">金叉</td>
+                            <td class="rsi">51.3</td>
+                            <td class="score-mid">88</td>
+                            <td class="reason-cell"><span class="tag-pill tag-hot">白酒复苏</span></td>
+                        </tr>
+                        <!-- 6. 宁德时代 -->
+                        <tr>
+                            <td class="rank">6</td>
+                            <td class="code">300750.SZ</td>
+                            <td class="name">宁德时代</td>
+                            <td class="price">208.50</td>
+                            <td class="change-down">-6.05%</td>
+                            <td class="signal">金叉</td>
+                            <td class="rsi">62.8</td>
+                            <td class="score-mid">87</td>
+                            <td class="reason-cell"><span class="tag-pill tag-policy">超跌反弹</span> <span class="tag-pill tag-industry">储能催化</span></td>
+                        </tr>
+                        <!-- 7. 美的集团 -->
+                        <tr>
+                            <td class="rank">7</td>
+                            <td class="code">000333.SZ</td>
+                            <td class="name">美的集团</td>
+                            <td class="price">68.50</td>
+                            <td class="change-down">-0.45%</td>
+                            <td class="signal">金叉</td>
+                            <td class="rsi">44.5</td>
+                            <td class="score-mid">86</td>
+                            <td class="reason-cell"><span class="tag-pill tag-overseas">家电出口超预期</span></td>
+                        </tr>
+                        <!-- 8. 比亚迪 -->
+                        <tr>
+                            <td class="rank">8</td>
+                            <td class="code">002594.SZ</td>
+                            <td class="name">比亚迪</td>
+                            <td class="price">268.00</td>
+                            <td class="change-up">+3.20%</td>
+                            <td class="signal">金叉</td>
+                            <td class="rsi">55.2</td>
+                            <td class="score-mid">85</td>
+                            <td class="reason-cell"><span class="tag-pill tag-industry">新能源车销量创新高</span></td>
+                        </tr>
+                        <!-- 9. 东方财富 -->
+                        <tr>
+                            <td class="rank">9</td>
+                            <td class="code">300059.SZ</td>
+                            <td class="name">东方财富</td>
+                            <td class="price">18.50</td>
+                            <td class="change-up">+2.10%</td>
+                            <td class="signal">金叉</td>
+                            <td class="rsi">48.9</td>
+                            <td class="score-mid">84</td>
+                            <td class="reason-cell"><span class="tag-pill tag-policy">券商板块回暖</span></td>
+                        </tr>
+                        <!-- 10. 隆基绿能 -->
+                        <tr>
+                            <td class="rank">10</td>
+                            <td class="code">601012.SH</td>
+                            <td class="name">隆基绿能</td>
+                            <td class="price">22.80</td>
+                            <td class="change-up">+1.50%</td>
+                            <td class="signal">金叉</td>
+                            <td class="rsi">40.1</td>
+                            <td class="score-mid">83</td>
+                            <td class="reason-cell"><span class="tag-pill tag-industry">光伏底部反转信号</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ========== Section 三、评分分布 ========== -->
+        <div class="card">
+            <h2 class="card-heading">三、评分分布</h2>
+            <div id="scoreChart" class="chart-container"></div>
+            <div class="chart-interpretation">
+                本次筛选共命中 <strong>10</strong> 只标的。其中评分 90 分以上（含）的标的共 <strong>4</strong> 只，占比 40%，主要集中在消费与金融板块；80-89 分区间共 <strong>6</strong> 只，占比 60%，分布于新能源、家电、券商等板块。高分标的在技术面信号强度和资金面认可度上均表现突出，建议优先关注 90+ 评分标的。
+            </div>
+        </div>
+
+        <!-- ========== Section 四、策略建议 ========== -->
+        <div class="card">
+            <h2 class="card-heading">四、策略建议</h2>
+
+            <div class="summary-box">
+                <p><strong>综合研判：</strong>当前市场整体技术面呈现多头信号集中释放的格局，TOP10 标的中 MACD 金叉形态明确，主力资金连续净流入。消费与金融板块在技术面与基本面共振下具备较高的安全边际，新能源板块虽短期超跌但产业催化明确，可关注底部反转机会。建议根据个人风险偏好分档配置。</p>
+            </div>
+
+            <div class="strategy-row">
+                <!-- 激进型 -->
+                <div class="strategy-card">
+                    <div class="strategy-type">激进型</div>
+                    <p>建议重点关注 TOP3 标的（贵州茅台、平安银行、中国平安），可在 MACD 金叉确认后积极建仓，目标持有 5-10 个交易日。</p>
+                </div>
+                <!-- 稳健型 -->
+                <div class="strategy-card">
+                    <div class="strategy-type">稳健型</div>
+                    <p>关注评分 85+ 且基本面确认的标的，分批建仓，设置 5% 止损线，以中线持有为主（2-4 周）。</p>
+                </div>
+                <!-- 保守型 -->
+                <div class="strategy-card">
+                    <div class="strategy-type">保守型</div>
+                    <p>等待 MACD 二次回踩确认后介入，优选 RSI &lt; 50 且均线多头排列的标的，严格控仓在总资金的 20% 以内。</p>
+                </div>
+            </div>
+
+            <div class="risk-box">
+                <p class="risk-title">风险提示</p>
+                <p class="risk-text">1. 量化筛选结果仅供参考，不构成投资建议。市场有风险，投资需谨慎。<br>
+                2. MACD 金叉为滞后指标，在震荡市中可能频繁发出虚假信号。<br>
+                3. 个股存在系统性风险、行业政策变动等不确定因素，请结合自身风险承受能力审慎决策。<br>
+                4. 过往表现不代表未来收益，任何策略均存在亏损可能。</p>
+            </div>
+        </div>
+
+        <!-- ========== Footer ========== -->
+        <div class="report-footer">
+            <p>本报告由多因子量化模型自动生成，仅供研究参考，不构成任何投资建议。</p>
+            <p>数据来源：Wind、同花顺iFind &nbsp;|&nbsp; 报告生成时间：2026年7月9日 15:30:00</p>
+        </div>
+
+    </div>
+
+    <!-- ========== ECharts Initialization ========== -->
+    <script>
+        /**
+         * Initialize the score distribution bar chart using ECharts.
+         * Displays the count of stocks in each score range bucket.
+         */
+        (function initScoreChart() {
+            var chartDom = document.getElementById('scoreChart');
+            if (!chartDom) return;
+            var myChart = echarts.init(chartDom);
+
+            var option = {
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: { type: 'shadow' },
+                    formatter: function(params) {
+                        var p = params[0];
+                        return p.name + ' 分<br/>标的数量：' + p.value + ' 只';
+                    }
+                },
+                grid: {
+                    left: '8%',
+                    right: '6%',
+                    bottom: '8%',
+                    top: '12%'
+                },
+                xAxis: {
+                    type: 'category',
+                    data: ['80-85', '85-90', '90-95', '95-100'],
+                    axisLabel: {
+                        fontSize: 13,
+                        color: '#555'
+                    },
+                    axisTick: { show: false },
+                    axisLine: {
+                        lineStyle: { color: '#ddd' }
+                    }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: '标的数量（只）',
+                    nameTextStyle: {
+                        fontSize: 12,
+                        color: '#888',
+                        padding: [0, 0, 8, 0]
+                    },
+                    minInterval: 1,
+                    axisLabel: {
+                        fontSize: 12,
+                        color: '#555'
+                    },
+                    splitLine: {
+                        lineStyle: { color: '#f0f0f0', type: 'dashed' }
+                    }
+                },
+                series: [
+                    {
+                        name: '标的数量',
+                        type: 'bar',
+                        barWidth: '45%',
+                        data: [
+                            {
+                                value: 4,
+                                itemStyle: {
+                                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                        { offset: 0, color: '#0f3460' },
+                                        { offset: 1, color: '#1a4a8a' }
+                                    ]),
+                                    borderRadius: [6, 6, 0, 0]
+                                }
+                            },
+                            {
+                                value: 3,
+                                itemStyle: {
+                                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                        { offset: 0, color: '#0f3460' },
+                                        { offset: 1, color: '#1a4a8a' }
+                                    ]),
+                                    borderRadius: [6, 6, 0, 0]
+                                }
+                            },
+                            {
+                                value: 2,
+                                itemStyle: {
+                                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                        { offset: 0, color: '#e74c3c' },
+                                        { offset: 1, color: '#f39c12' }
+                                    ]),
+                                    borderRadius: [6, 6, 0, 0]
+                                }
+                            },
+                            {
+                                value: 1,
+                                itemStyle: {
+                                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                        { offset: 0, color: '#e74c3c' },
+                                        { offset: 1, color: '#f39c12' }
+                                    ]),
+                                    borderRadius: [6, 6, 0, 0]
+                                }
+                            }
+                        ],
+                        label: {
+                            show: true,
+                            position: 'top',
+                            fontSize: 14,
+                            fontWeight: 'bold',
+                            color: '#1a1a2e',
+                            formatter: '{c} 只'
+                        }
+                    }
+                ]
+            };
+
+            myChart.setOption(option);
+
+            /**
+             * Handle window resize to keep the chart responsive.
+             */
+            window.addEventListener('resize', function() {
+                myChart.resize();
+            });
+        })();
+    </script>
+
+</body>
+</html>

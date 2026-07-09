@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>策略回测报告</title>
+    <style id="theme-vars">
+/* =========================================================
+   A股盯盘与复盘系统 — Brand Design Tokens (v3)
+   Professional Investment Research Report Style
+   Reference: 半导体产业链每日简报
+   ========================================================= */
+
+:root {
+  /* ---- Color System ---- */
+  /* Brand Primary — Navy Blue */
+  --color-primary: #0f3460;
+  --color-primary-hover: #1a4a8a;
+  --color-primary-active: #0a2848;
+  --color-primary-light: #eaf0ff;
+  --color-primary-bg: #f0f4ff;
+
+  /* A-Stock Convention — Red=Up, Green=Down */
+  --color-up: #e74c3c;
+  --color-up-bg: #ffeaea;
+  --color-down: #27ae60;
+  --color-down-bg: #eaffea;
+  --color-flat: #888;
+
+  /* Semantic Status Colors */
+  --state-success: #27ae60;
+  --state-warning: #f39c12;
+  --state-error: #e74c3c;
+  --state-info: #2980b9;
+
+  /* Background & Surface — Light theme */
+  --bg-base: #f5f6f8;
+  --bg-elevated: #ffffff;
+  --bg-surface: #f8f9fb;
+  --bg-card: #ffffff;
+  --bg-hover: #f0f4ff;
+  --bg-overlay: rgba(0, 0, 0, 0.5);
+
+  /* Header Gradient */
+  --header-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+
+  /* Text */
+  --text-primary: #2c3e50;
+  --text-secondary: #555;
+  --text-tertiary: #888;
+  --text-inverse: #ffffff;
+
+  /* Border */
+  --border-default: #e8ecf1;
+  --border-subtle: #f0f0f0;
+  --border-strong: #ddd;
+
+  /* ---- Shape System ---- */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* ---- Typography ---- */
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --font-mono: "SF Mono", "JetBrains Mono", "Fira Code", "Consolas", monospace;
+
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-base: 14px;
+  --text-lg: 15px;
+  --text-xl: 18px;
+  --text-2xl: 22px;
+  --text-3xl: 28px;
+
+  --leading-tight: 1.2;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.7;
+
+  /* ---- Spacing ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* ---- Shadows ---- */
+  --shadow-sm: 0 1px 4px rgba(0,0,0,0.06);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+}
+
+/* Tag styles (from reference) */
+.tag-hot { background: #ffeaea; color: #e74c3c; font-size: 11px; padding: 2px 8px; border-radius: 4px; display: inline-block; }
+.tag-policy { background: #eaf6ff; color: #2980b9; font-size: 11px; padding: 2px 8px; border-radius: 4px; display: inline-block; }
+.tag-industry { background: #eaffea; color: #27ae60; font-size: 11px; padding: 2px 8px; border-radius: 4px; display: inline-block; }
+.tag-overseas { background: #fff3e0; color: #e67e22; font-size: 11px; padding: 2px 8px; border-radius: 4px; display: inline-block; }
+.tag-risk { background: #fff8e1; color: #f39c12; font-size: 11px; padding: 2px 8px; border-radius: 4px; display: inline-block; }
+
+/* Utility classes */
+.up { color: var(--color-up); }
+.down { color: var(--color-down); }
+.neutral { color: var(--color-flat); }
+
+/* Summary box gradient */
+.summary-box {
+  background: linear-gradient(135deg, #e8f0fe, #f0e8fe);
+  border-radius: 10px;
+  padding: 20px 24px;
+}
+
+/* Risk box */
+.risk-box {
+  background: #fff8e1;
+  border-left: 4px solid #f39c12;
+  border-radius: 8px;
+  padding: 16px 20px;
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+    <style>
+        /* ========== 页面全局样式 ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background: var(--bg-base);
+            color: var(--text-primary);
+            line-height: var(--leading-normal);
+            font-size: var(--text-base);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .page-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: var(--space-8) var(--space-6);
+        }
+
+        /* ========== 头部渐变区域 ========== */
+        .report-header {
+            background: var(--header-gradient);
+            border-radius: var(--radius-xl);
+            padding: 36px 40px;
+            margin-bottom: var(--space-8);
+            color: var(--text-inverse);
+        }
+
+        .report-header h1 {
+            font-size: 26px;
+            font-weight: 700;
+            margin-bottom: var(--space-3);
+            letter-spacing: 1px;
+        }
+
+        .report-header .header-meta {
+            font-size: var(--text-sm);
+            opacity: 0.85;
+            line-height: var(--leading-relaxed);
+        }
+
+        /* ========== 卡片基础样式 ========== */
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            padding: 28px 32px;
+            margin-bottom: var(--space-6);
+        }
+
+        .card-heading {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: var(--space-5);
+            padding-bottom: var(--space-3);
+            border-bottom: 2px solid var(--border-default);
+        }
+
+        /* ========== 策略参数 Market Grid ========== */
+        .market-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: var(--space-4);
+            margin-bottom: var(--space-5);
+        }
+
+        .market-item {
+            background: var(--bg-surface);
+            border-radius: var(--radius-md);
+            padding: var(--space-4) var(--space-5);
+            text-align: center;
+        }
+
+        .market-item .label {
+            font-size: var(--text-xs);
+            color: var(--text-tertiary);
+            margin-bottom: var(--space-2);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .market-item .value {
+            font-size: var(--text-lg);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* ========== 绩效指标大数字 ========== */
+        .perf-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: var(--space-4);
+        }
+
+        .perf-item {
+            background: var(--bg-surface);
+            border-radius: var(--radius-md);
+            padding: var(--space-5);
+            text-align: center;
+        }
+
+        .perf-item .label {
+            font-size: var(--text-xs);
+            color: var(--text-tertiary);
+            margin-bottom: var(--space-2);
+        }
+
+        .perf-item .value {
+            font-size: 28px;
+            font-weight: 700;
+            line-height: var(--leading-tight);
+        }
+
+        .perf-item .value.up { color: var(--color-up); }
+        .perf-item .value.down { color: var(--color-down); }
+        .perf-item .value.navy { color: var(--color-primary); }
+
+        /* ========== 图表容器 ========== */
+        .chart-container {
+            width: 100%;
+            height: 400px;
+        }
+
+        /* ========== 表格样式 ========== */
+        .leader-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: var(--text-base);
+        }
+
+        .leader-table thead th {
+            background: var(--color-primary);
+            color: var(--text-inverse);
+            padding: 12px 16px;
+            text-align: center;
+            font-weight: 600;
+            font-size: var(--text-sm);
+        }
+
+        .leader-table thead th:first-child {
+            border-radius: var(--radius-sm) 0 0 0;
+        }
+
+        .leader-table thead th:last-child {
+            border-radius: 0 var(--radius-sm) 0 0;
+        }
+
+        .leader-table tbody td {
+            padding: 11px 16px;
+            text-align: center;
+            border-bottom: 1px solid var(--border-subtle);
+            font-size: var(--text-base);
+        }
+
+        .leader-table tbody tr:hover {
+            background: var(--bg-hover);
+        }
+
+        .leader-table tbody tr:last-child td {
+            border-bottom: none;
+            font-weight: 600;
+            background: var(--bg-surface);
+        }
+
+        .leader-table .up { color: var(--color-up); font-weight: 600; }
+        .leader-table .down { color: var(--color-down); font-weight: 600; }
+
+        /* ========== 热力图容器 ========== */
+        .heatmap-container {
+            width: 100%;
+            height: 200px;
+        }
+
+        /* ========== Hotspot Cards (风险分析) ========== */
+        .hotspot-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--space-4);
+        }
+
+        .hotspot-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            padding: 24px;
+            border-top: 3px solid var(--color-primary);
+        }
+
+        .hotspot-card .card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: var(--space-3);
+            font-size: 20px;
+        }
+
+        .hotspot-card .card-icon.red { background: var(--color-up-bg); color: var(--color-up); }
+        .hotspot-card .card-icon.blue { background: var(--color-primary-light); color: var(--color-primary); }
+        .hotspot-card .card-icon.orange { background: #fff3e0; color: #e67e22; }
+
+        .hotspot-card h4 {
+            font-size: var(--text-lg);
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: var(--space-2);
+        }
+
+        .hotspot-card p {
+            font-size: var(--text-sm);
+            color: var(--text-secondary);
+            line-height: var(--leading-relaxed);
+        }
+
+        .hotspot-card .highlight {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: var(--space-1);
+        }
+
+        .hotspot-card .highlight.up { color: var(--color-down); }
+        .hotspot-card .highlight.navy { color: var(--color-primary); }
+        .hotspot-card .detail {
+            font-size: var(--text-xs);
+            color: var(--text-tertiary);
+            margin-bottom: var(--space-2);
+        }
+
+        /* ========== 事件列表 (建议) ========== */
+        .event-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .event-list li {
+            padding: 10px 0 10px 20px;
+            border-bottom: 1px solid var(--border-subtle);
+            font-size: var(--text-base);
+            color: var(--text-secondary);
+            position: relative;
+            line-height: var(--leading-relaxed);
+        }
+
+        .event-list li:last-child {
+            border-bottom: none;
+        }
+
+        .event-list li::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 18px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--color-primary);
+        }
+
+        /* ========== 策略描述 ========== */
+        .strategy-desc {
+            font-size: var(--text-base);
+            color: var(--text-secondary);
+            line-height: var(--leading-relaxed);
+            padding: var(--space-3) 0 0;
+        }
+
+        /* ========== Footer ========== */
+        .report-footer {
+            margin-top: var(--space-10);
+            padding-top: var(--space-6);
+            border-top: 1px solid var(--border-default);
+            font-size: var(--text-xs);
+            color: var(--text-tertiary);
+            line-height: var(--leading-relaxed);
+            text-align: center;
+        }
+
+        /* ========== 响应式 ========== */
+        @media (max-width: 900px) {
+            .market-grid, .perf-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .hotspot-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .market-grid, .perf-grid {
+                grid-template-columns: 1fr;
+            }
+            .page-container {
+                padding: var(--space-4);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+
+        <!-- ==================== 报告头部 ==================== -->
+        <div class="report-header">
+            <h1>MACD金叉策略回测报告</h1>
+            <div class="header-meta">
+                回测区间: 2025-01-01 至 2026-06-30 | 调仓频率: 日频<br>
+                报告生成: 2026年7月9日
+            </div>
+        </div>
+
+        <!-- ==================== 一、策略参数 ==================== -->
+        <div class="card">
+            <div class="card-heading">一、策略参数</div>
+            <div class="market-grid">
+                <div class="market-item">
+                    <div class="label">策略名称</div>
+                    <div class="value">MACD金叉策略</div>
+                </div>
+                <div class="market-item">
+                    <div class="label">回测区间</div>
+                    <div class="value">18个月</div>
+                </div>
+                <div class="market-item">
+                    <div class="label">初始资金</div>
+                    <div class="value">&yen;1,000,000</div>
+                </div>
+                <div class="market-item">
+                    <div class="label">调仓频率</div>
+                    <div class="value">日频</div>
+                </div>
+            </div>
+            <p class="strategy-desc">
+                本策略基于MACD指标的金叉信号进行买卖操作。当MACD快线（DIF）上穿慢线（DEA）时产生买入信号，
+                当快线下穿慢线时产生卖出信号。回测采用全仓进出模式，不考虑交易费用和滑点影响。
+                策略参数设置为MACD(12,26,9)，适用于A股主板市场日线级别交易。
+            </p>
+        </div>
+
+        <!-- ==================== 二、绩效指标 ==================== -->
+        <div class="card">
+            <div class="card-heading">二、绩效指标</div>
+            <div class="perf-grid">
+                <div class="perf-item">
+                    <div class="label">累计收益</div>
+                    <div class="value up">+42.35%</div>
+                </div>
+                <div class="perf-item">
+                    <div class="label">年化收益</div>
+                    <div class="value up">+28.18%</div>
+                </div>
+                <div class="perf-item">
+                    <div class="label">夏普比率</div>
+                    <div class="value navy">1.85</div>
+                </div>
+                <div class="perf-item">
+                    <div class="label">最大回撤</div>
+                    <div class="value down">-12.30%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== 三、净值走势对比 ==================== -->
+        <div class="card">
+            <div class="card-heading">三、净值走势对比</div>
+            <div class="chart-container" id="navChart"></div>
+        </div>
+
+        <!-- ==================== 四、月度收益分析 ==================== -->
+        <div class="card">
+            <div class="card-heading">四、月度收益分析</div>
+            <table class="leader-table">
+                <thead>
+                    <tr>
+                        <th>月份</th>
+                        <th>策略收益</th>
+                        <th>基准收益</th>
+                        <th>超额收益</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1月</td>
+                        <td class="up">+3.2%</td>
+                        <td class="up">+1.1%</td>
+                        <td class="up">+2.1%</td>
+                    </tr>
+                    <tr>
+                        <td>2月</td>
+                        <td class="down">-1.5%</td>
+                        <td class="down">-0.8%</td>
+                        <td class="down">-0.7%</td>
+                    </tr>
+                    <tr>
+                        <td>3月</td>
+                        <td class="up">+5.8%</td>
+                        <td class="up">+2.1%</td>
+                        <td class="up">+3.7%</td>
+                    </tr>
+                    <tr>
+                        <td>4月</td>
+                        <td class="up">+2.1%</td>
+                        <td class="up">+0.5%</td>
+                        <td class="up">+1.6%</td>
+                    </tr>
+                    <tr>
+                        <td>5月</td>
+                        <td class="down">-0.8%</td>
+                        <td class="down">-1.2%</td>
+                        <td class="up">+0.4%</td>
+                    </tr>
+                    <tr>
+                        <td>6月</td>
+                        <td class="up">+4.5%</td>
+                        <td class="up">+1.8%</td>
+                        <td class="up">+2.7%</td>
+                    </tr>
+                    <tr>
+                        <td>汇总</td>
+                        <td class="up">+13.1%</td>
+                        <td class="up">+3.5%</td>
+                        <td class="up">+9.6%</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ==================== 五、月度收益热力图 ==================== -->
+        <div class="card">
+            <div class="card-heading">五、月度收益热力图</div>
+            <div class="heatmap-container" id="heatmapChart"></div>
+        </div>
+
+        <!-- ==================== 六、风险分析 ==================== -->
+        <div class="card">
+            <div class="card-heading">六、风险分析</div>
+            <div class="hotspot-grid">
+                <!-- 最大回撤分析 -->
+                <div class="hotspot-card">
+                    <div class="card-icon red">&#9660;</div>
+                    <div class="highlight down">-12.30%</div>
+                    <div class="detail">最大回撤期间: 2025年3月 - 4月</div>
+                    <h4>最大回撤分析</h4>
+                    <p>回撤原因主要为市场系统性调整，期间上证指数连续下探，
+                       策略未能及时规避，但在市场企稳后迅速恢复净值。
+                       建议后续加入止损模块以控制极端行情下的回撤幅度。</p>
+                </div>
+                <!-- 波动率分析 -->
+                <div class="hotspot-card">
+                    <div class="card-icon blue">&#9632;</div>
+                    <div class="highlight navy">18.5%</div>
+                    <div class="detail">年化波动率 (基准: 22.3%)</div>
+                    <h4>波动率分析</h4>
+                    <p>策略年化波动率为18.5%，低于基准上证指数的22.3%，
+                       说明策略在收益增强的同时有效控制了波动风险，
+                       风险调整后收益优于基准表现。</p>
+                </div>
+                <!-- 胜率分析 -->
+                <div class="hotspot-card">
+                    <div class="card-icon orange">&#9733;</div>
+                    <div class="highlight navy">58.3%</div>
+                    <div class="detail">交易日获利比例 | 盈亏比: 2.1:1</div>
+                    <h4>胜率分析</h4>
+                    <p>策略在58.3%的交易日中实现正收益，盈亏比达到2.1:1，
+                       表明策略在盈利时的幅度显著大于亏损幅度，
+                       整体具有良好的正向期望值。</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== 七、策略评价与建议 ==================== -->
+        <div class="card">
+            <div class="card-heading">七、策略评价与建议</div>
+
+            <!-- 总体评价 -->
+            <div class="summary-box" style="margin-bottom: var(--space-5);">
+                <p><strong>总体评价:</strong> MACD金叉策略在18个月的回测期间表现优异，
+                   累计收益42.35%，年化收益28.18%，显著跑赢基准上证指数。
+                   夏普比率1.85表明策略具有良好的风险调整后收益。
+                   策略在趋势行情中捕捉能力较强，但在震荡市中存在一定的假信号问题，
+                   建议配合成交量或其他辅助指标进行信号过滤。</p>
+            </div>
+
+            <!-- 风险提示 -->
+            <div class="risk-box" style="margin-bottom: var(--space-5);">
+                <p><strong>风险提示:</strong> 本回测结果基于历史数据，不构成投资建议。
+                   回测未考虑交易手续费、滑点、涨跌停限制等实际交易约束。
+                   过去表现不代表未来收益，实盘结果可能与回测存在显著差异。
+                   投资者应根据自身风险承受能力谨慎决策。</p>
+            </div>
+
+            <!-- 优化建议 -->
+            <ul class="event-list">
+                <li>建议加入成交量确认条件，过滤弱势金叉信号，降低假突破带来的无效交易</li>
+                <li>可考虑引入动态止损机制，将最大回撤控制在8%以内，提升策略抗风险能力</li>
+                <li>建议在不同市场周期（牛市/熊市/震荡市）分别优化MACD参数，提升适应性</li>
+                <li>可搭配RSI或KDJ指标构建多因子模型，提高信号准确率和整体收益水平</li>
+                <li>实盘部署前建议进行样本外测试（Walk-Forward Analysis），验证策略的泛化能力</li>
+            </ul>
+        </div>
+
+        <!-- ==================== Footer ==================== -->
+        <div class="report-footer">
+            <p>免责声明: 本报告仅供研究参考，不构成任何投资建议。回测结果基于历史数据，不预示未来表现。</p>
+            <p>投资有风险，入市需谨慎。&copy; 2026 A股盯盘与复盘系统</p>
+        </div>
+
+    </div>
+
+    <!-- ==================== ECharts 脚本 ==================== -->
+    <script>
+        /**
+         * 初始化净值走势对比图表
+         * 包含策略净值与基准净值两条曲线及回撤标记线
+         */
+        (function initNavChart() {
+            var chart = echarts.init(document.getElementById('navChart'));
+            var option = {
+                tooltip: {
+                    trigger: 'axis',
+                    backgroundColor: 'rgba(255,255,255,0.96)',
+                    borderColor: '#e8ecf1',
+                    textStyle: { color: '#2c3e50', fontSize: 13 },
+                    formatter: function(params) {
+                        var result = params[0].axisValueLabel + '<br/>';
+                        params.forEach(function(p) {
+                            result += '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'
+                                + p.color + ';margin-right:6px;"></span>'
+                                + p.seriesName + ': ' + p.value.toFixed(2) + '<br/>';
+                        });
+                        return result;
+                    }
+                },
+                legend: {
+                    data: ['策略净值', '基准净值'],
+                    top: 0,
+                    right: 0,
+                    textStyle: { color: '#555', fontSize: 13 }
+                },
+                grid: {
+                    left: 50,
+                    right: 30,
+                    top: 45,
+                    bottom: 35
+                },
+                xAxis: {
+                    type: 'category',
+                    data: ['2025-01', '2025-03', '2025-06', '2025-09', '2025-12', '2026-03', '2026-06'],
+                    axisLine: { lineStyle: { color: '#e8ecf1' } },
+                    axisTick: { show: false },
+                    axisLabel: { color: '#888', fontSize: 12 }
+                },
+                yAxis: {
+                    type: 'value',
+                    min: 0.9,
+                    max: 1.2,
+                    splitLine: { lineStyle: { color: '#f0f0f0', type: 'dashed' } },
+                    axisLabel: { color: '#888', fontSize: 12, formatter: '{value}' }
+                },
+                series: [
+                    {
+                        name: '策略净值',
+                        type: 'line',
+                        data: [1.0, 1.03, 1.01, 1.07, 1.10, 1.09, 1.14],
+                        smooth: true,
+                        symbol: 'circle',
+                        symbolSize: 7,
+                        lineStyle: { width: 3, color: '#0f3460' },
+                        itemStyle: { color: '#0f3460' },
+                        areaStyle: {
+                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                { offset: 0, color: 'rgba(15,52,96,0.15)' },
+                                { offset: 1, color: 'rgba(15,52,96,0.01)' }
+                            ])
+                        },
+                        markLine: {
+                            silent: true,
+                            symbol: 'none',
+                            lineStyle: { color: '#e74c3c', type: 'dashed', width: 1 },
+                            data: [
+                                { xAxis: '2025-06', label: { formatter: '回撤区间', color: '#e74c3c', fontSize: 11 } }
+                            ]
+                        }
+                    },
+                    {
+                        name: '基准净值',
+                        type: 'line',
+                        data: [1.0, 1.01, 1.01, 1.03, 1.04, 1.03, 1.05],
+                        smooth: true,
+                        symbol: 'diamond',
+                        symbolSize: 6,
+                        lineStyle: { width: 2, color: '#aaa', type: 'dashed' },
+                        itemStyle: { color: '#aaa' }
+                    }
+                ]
+            };
+            chart.setOption(option);
+            window.addEventListener('resize', function() { chart.resize(); });
+        })();
+
+        /**
+         * 初始化月度收益热力图
+         * 使用 visualMap 映射正负收益到红绿色阶
+         */
+        (function initHeatmapChart() {
+            var chart = echarts.init(document.getElementById('heatmapChart'));
+
+            /* 热力图数据格式: [月份索引, 收益类型, 收益值] */
+            var months = ['1月', '2月', '3月', '4月', '5月', '6月'];
+            var types = ['策略收益', '基准收益', '超额收益'];
+            var data = [
+                [0, 0, 3.2], [0, 1, 1.1], [0, 2, 2.1],
+                [1, 0, -1.5], [1, 1, -0.8], [1, 2, -0.7],
+                [2, 0, 5.8], [2, 1, 2.1], [2, 2, 3.7],
+                [3, 0, 2.1], [3, 1, 0.5], [3, 2, 1.6],
+                [4, 0, -0.8], [4, 1, -1.2], [4, 2, 0.4],
+                [5, 0, 4.5], [5, 1, 1.8], [5, 2, 2.7]
+            ];
+
+            var option = {
+                tooltip: {
+                    position: 'top',
+                    backgroundColor: 'rgba(255,255,255,0.96)',
+                    borderColor: '#e8ecf1',
+                    textStyle: { color: '#2c3e50', fontSize: 13 },
+                    formatter: function(p) {
+                        return months[p.data[0]] + ' - ' + types[p.data[1]] + ': ' + (p.data[2] > 0 ? '+' : '') + p.data[2] + '%';
+                    }
+                },
+                grid: {
+                    left: 90,
+                    right: 50,
+                    top: 10,
+                    bottom: 30
+                },
+                xAxis: {
+                    type: 'category',
+                    data: types,
+                    splitArea: { show: false },
+                    axisLine: { lineStyle: { color: '#e8ecf1' } },
+                    axisTick: { show: false },
+                    axisLabel: { color: '#888', fontSize: 12 }
+                },
+                yAxis: {
+                    type: 'category',
+                    data: months,
+                    splitArea: { show: false },
+                    axisLine: { lineStyle: { color: '#e8ecf1' } },
+                    axisTick: { show: false },
+                    axisLabel: { color: '#555', fontSize: 13 }
+                },
+                visualMap: {
+                    min: -2,
+                    max: 6,
+                    calculable: true,
+                    orient: 'horizontal',
+                    left: 'center',
+                    bottom: 0,
+                    inRange: {
+                        color: ['#27ae60', '#eaffea', '#ffffff', '#ffeaea', '#e74c3c']
+                    },
+                    textStyle: { color: '#888', fontSize: 11 },
+                    text: ['高', '低']
+                },
+                series: [{
+                    type: 'heatmap',
+                    data: data,
+                    label: {
+                        show: true,
+                        fontSize: 13,
+                        fontWeight: 600,
+                        formatter: function(p) {
+                            return (p.data[2] > 0 ? '+' : '') + p.data[2] + '%';
+                        }
+                    },
+                    itemStyle: {
+                        borderColor: '#fff',
+                        borderWidth: 3,
+                        borderRadius: 6
+                    },
+                    emphasis: {
+                        itemStyle: {
+                            shadowBlur: 10,
+                            shadowColor: 'rgba(0,0,0,0.2)'
+                        }
+                    }
+                }]
+            };
+            chart.setOption(option);
+            window.addEventListener('resize', function() { chart.resize(); });
+        })();
+    </script>
+</body>
+</html>

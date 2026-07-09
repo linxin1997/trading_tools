@@ -1,0 +1,116 @@
+/* =========================================================
+   A股盯盘与复盘系统 — Brand Design Tokens (v3)
+   Professional Investment Research Report Style
+   Reference: 半导体产业链每日简报
+   ========================================================= */
+
+:root {
+  /* ---- Color System ---- */
+  /* Brand Primary — Navy Blue */
+  --color-primary: #0f3460;
+  --color-primary-hover: #1a4a8a;
+  --color-primary-active: #0a2848;
+  --color-primary-light: #eaf0ff;
+  --color-primary-bg: #f0f4ff;
+
+  /* A-Stock Convention — Red=Up, Green=Down */
+  --color-up: #e74c3c;
+  --color-up-bg: #ffeaea;
+  --color-down: #27ae60;
+  --color-down-bg: #eaffea;
+  --color-flat: #888;
+
+  /* Semantic Status Colors */
+  --state-success: #27ae60;
+  --state-warning: #f39c12;
+  --state-error: #e74c3c;
+  --state-info: #2980b9;
+
+  /* Background & Surface — Light theme */
+  --bg-base: #f5f6f8;
+  --bg-elevated: #ffffff;
+  --bg-surface: #f8f9fb;
+  --bg-card: #ffffff;
+  --bg-hover: #f0f4ff;
+  --bg-overlay: rgba(0, 0, 0, 0.5);
+
+  /* Header Gradient */
+  --header-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+
+  /* Text */
+  --text-primary: #2c3e50;
+  --text-secondary: #555;
+  --text-tertiary: #888;
+  --text-inverse: #ffffff;
+
+  /* Border */
+  --border-default: #e8ecf1;
+  --border-subtle: #f0f0f0;
+  --border-strong: #ddd;
+
+  /* ---- Shape System ---- */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* ---- Typography ---- */
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --font-mono: "SF Mono", "JetBrains Mono", "Fira Code", "Consolas", monospace;
+
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-base: 14px;
+  --text-lg: 15px;
+  --text-xl: 18px;
+  --text-2xl: 22px;
+  --text-3xl: 28px;
+
+  --leading-tight: 1.2;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.7;
+
+  /* ---- Spacing ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* ---- Shadows ---- */
+  --shadow-sm: 0 1px 4px rgba(0,0,0,0.06);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+}
+
+/* Tag styles (from reference) */
+.tag-hot { background: #ffeaea; color: #e74c3c; font-size: 11px; padding: 2px 8px; border-radius: 4px; display: inline-block; }
+.tag-policy { background: #eaf6ff; color: #2980b9; font-size: 11px; padding: 2px 8px; border-radius: 4px; display: inline-block; }
+.tag-industry { background: #eaffea; color: #27ae60; font-size: 11px; padding: 2px 8px; border-radius: 4px; display: inline-block; }
+.tag-overseas { background: #fff3e0; color: #e67e22; font-size: 11px; padding: 2px 8px; border-radius: 4px; display: inline-block; }
+.tag-risk { background: #fff8e1; color: #f39c12; font-size: 11px; padding: 2px 8px; border-radius: 4px; display: inline-block; }
+
+/* Utility classes */
+.up { color: var(--color-up); }
+.down { color: var(--color-down); }
+.neutral { color: var(--color-flat); }
+
+/* Summary box gradient */
+.summary-box {
+  background: linear-gradient(135deg, #e8f0fe, #f0e8fe);
+  border-radius: 10px;
+  padding: 20px 24px;
+}
+
+/* Risk box */
+.risk-box {
+  background: #fff8e1;
+  border-left: 4px solid #f39c12;
+  border-radius: 8px;
+  padding: 16px 20px;
+}

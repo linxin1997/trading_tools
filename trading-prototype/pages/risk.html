@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>风控监控</title>
+    <style id="theme-vars">
+/* =========================================================
+   A股盯盘与复盘系统 — Brand Design Tokens
+   Dark Finance Terminal Style
+   ========================================================= */
+
+:root {
+  /* ---- Color System ---- */
+  /* Brand Primary — Cool Indigo Blue */
+  --color-primary: #4f8ff7;
+  --color-primary-hover: #6da3fa;
+  --color-primary-active: #3a7be5;
+  --color-primary-light: rgba(79, 143, 247, 0.12);
+  --color-primary-bg: rgba(79, 143, 247, 0.06);
+
+  /* A-Stock Convention — Red=Up, Green=Down */
+  --color-up: #f5222d;
+  --color-up-bg: rgba(245, 34, 45, 0.10);
+  --color-down: #52c41a;
+  --color-down-bg: rgba(82, 196, 26, 0.10);
+  --color-flat: #8c8c8c;
+
+  /* Semantic Status Colors */
+  --state-success: #52c41a;
+  --state-warning: #faad14;
+  --state-error: #f5222d;
+  --state-info: #4f8ff7;
+
+  /* Background & Surface */
+  --bg-base: #0e1117;
+  --bg-elevated: #161b22;
+  --bg-surface: #1c2128;
+  --bg-overlay: rgba(0, 0, 0, 0.65);
+  --bg-sunken: #0d1117;
+
+  /* Text */
+  --text-primary: #e6edf3;
+  --text-secondary: #8b949e;
+  --text-tertiary: #6e7681;
+  --text-inverse: #0e1117;
+
+  /* Border */
+  --border-default: #30363d;
+  --border-subtle: #21262d;
+  --border-strong: #484f58;
+
+  /* ---- Shape System ---- */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+
+  /* ---- Typography ---- */
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+
+  --text-xs: 11px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-lg: 16px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+  --text-3xl: 30px;
+
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+
+  /* ---- Spacing ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* ---- Surface Depth ---- */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+}
+
+/* Typography Classes */
+.text-xs   { font-size: var(--text-xs);   line-height: var(--leading-normal); }
+.text-sm   { font-size: var(--text-sm);   line-height: var(--leading-normal); }
+.text-base { font-size: var(--text-base); line-height: var(--leading-normal); }
+.text-lg   { font-size: var(--text-lg);   line-height: var(--leading-tight); }
+.text-xl   { font-size: var(--text-xl);   line-height: var(--leading-tight); }
+.text-2xl  { font-size: var(--text-2xl);  line-height: var(--leading-tight); }
+.text-3xl  { font-size: var(--text-3xl);  line-height: var(--leading-tight); }
+
+.font-mono { font-family: var(--font-mono); }
+.font-sans { font-family: var(--font-family); }
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-primary: var(--color-primary);
+  }
+  @layer base {
+    body { background: var(--bg-base); color: var(--text-primary); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <main style="width:1440px; margin:0 auto; display:flex; min-height:100vh; font-family:var(--font-family);">
+
+      <!-- ====== 左侧导航栏 ====== -->
+      <nav style="width:240px; min-height:100vh; background:var(--bg-elevated); border-right:1px solid var(--border-subtle); display:flex; flex-direction:column; flex-shrink:0;">
+        <!-- Logo -->
+        <div style="padding:20px 16px 16px; border-bottom:1px solid var(--border-subtle);">
+          <div style="font-size:15px; font-weight:700; color:var(--text-primary); letter-spacing:0.5px;">A股盯盘与复盘</div>
+          <div style="font-size:11px; color:var(--text-tertiary); margin-top:4px;">专业终端 v2.0</div>
+        </div>
+        <!-- Nav Items -->
+        <div style="padding:12px 0; flex:1;">
+          <a href="#" style="display:flex; align-items:center; gap:10px; padding:10px 16px; color:var(--text-secondary); text-decoration:none; font-size:13px; transition:all .15s;">
+            <i data-icon="gauge" style="width:18px; height:18px;"></i>盯盘仪表盘
+          </a>
+          <a href="#" style="display:flex; align-items:center; gap:10px; padding:10px 16px; color:var(--text-secondary); text-decoration:none; font-size:13px; transition:all .15s;">
+            <i data-icon="filter" style="width:18px; height:18px;"></i>选股器
+          </a>
+          <a href="#" style="display:flex; align-items:center; gap:10px; padding:10px 16px; color:var(--text-secondary); text-decoration:none; font-size:13px; transition:all .15s;">
+            <i data-icon="file-bar-chart" style="width:18px; height:18px;"></i>复盘报告
+          </a>
+          <!-- Active item -->
+          <a href="#" style="display:flex; align-items:center; gap:10px; padding:10px 16px; color:var(--color-primary); text-decoration:none; font-size:13px; background:var(--color-primary-bg); border-left:3px solid var(--color-primary);">
+            <i data-icon="shield-alert" style="width:18px; height:18px;"></i>风控监控
+          </a>
+          <a href="#" style="display:flex; align-items:center; gap:10px; padding:10px 16px; color:var(--text-secondary); text-decoration:none; font-size:13px; transition:all .15s;">
+            <i data-icon="wallet" style="width:18px; height:18px;"></i>持仓管理
+          </a>
+          <a href="#" style="display:flex; align-items:center; gap:10px; padding:10px 16px; color:var(--text-secondary); text-decoration:none; font-size:13px; transition:all .15s;">
+            <i data-icon="flask-conical" style="width:18px; height:18px;"></i>策略回测
+          </a>
+          <a href="#" style="display:flex; align-items:center; gap:10px; padding:10px 16px; color:var(--text-secondary); text-decoration:none; font-size:13px; transition:all .15s;">
+            <i data-icon="newspaper" style="width:18px; height:18px;"></i>舆情新闻
+          </a>
+        </div>
+        <!-- Bottom user area -->
+        <div style="padding:12px 16px; border-top:1px solid var(--border-subtle); display:flex; align-items:center; gap:8px;">
+          <div style="width:32px; height:32px; border-radius:50%; background:var(--bg-surface); display:flex; align-items:center; justify-content:center; color:var(--text-secondary); font-size:13px; font-weight:600;">U</div>
+          <div>
+            <div style="font-size:12px; color:var(--text-primary); font-weight:500;">交易员</div>
+            <div style="font-size:11px; color:var(--text-tertiary);">在线</div>
+          </div>
+        </div>
+      </nav>
+
+      <!-- ====== 右侧内容区域 ====== -->
+      <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+
+        <!-- 顶部栏 -->
+        <header style="padding:16px 24px; border-bottom:1px solid var(--border-subtle); display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
+          <h1 style="font-size:20px; font-weight:700; color:var(--text-primary); margin:0;">风控监控</h1>
+          <div style="display:flex; align-items:center; gap:12px;">
+            <span style="font-size:12px; color:var(--text-tertiary); font-family:var(--font-mono);">2025-01-15 14:35:00</span>
+            <div style="width:8px; height:8px; border-radius:50%; background:var(--state-success);"></div>
+            <span style="font-size:12px; color:var(--state-success);">实时监控中</span>
+          </div>
+        </header>
+
+        <!-- 主内容区: 两列布局 -->
+        <div style="flex:1; padding:20px 24px; display:flex; gap:20px; overflow-y:auto;">
+
+          <!-- ====== 左列: 告警列表 (14份) ====== -->
+          <div style="flex:14; min-width:0; display:flex; flex-direction:column; gap:16px;">
+
+            <!-- 告警列表标题 -->
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <h2 style="font-size:16px; font-weight:600; color:var(--text-primary); margin:0;">告警列表</h2>
+                <span style="display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; border-radius:var(--radius-full); background:var(--state-error); color:#fff; font-size:11px; font-weight:600; padding:0 6px;">8</span>
+              </div>
+            </div>
+
+            <!-- 筛选标签 -->
+            <div style="display:flex; gap:8px;">
+              <button style="padding:6px 14px; border-radius:var(--radius-full); background:var(--color-primary); color:#fff; border:none; font-size:12px; cursor:pointer; font-weight:500;">全部</button>
+              <button style="padding:6px 14px; border-radius:var(--radius-full); background:var(--bg-surface); color:var(--text-secondary); border:1px solid var(--border-default); font-size:12px; cursor:pointer;">紧急</button>
+              <button style="padding:6px 14px; border-radius:var(--radius-full); background:var(--bg-surface); color:var(--text-secondary); border:1px solid var(--border-default); font-size:12px; cursor:pointer;">警告</button>
+              <button style="padding:6px 14px; border-radius:var(--radius-full); background:var(--bg-surface); color:var(--text-secondary); border:1px solid var(--border-default); font-size:12px; cursor:pointer;">提示</button>
+            </div>
+
+            <!-- 告警列表内容 -->
+            <div style="display:flex; flex-direction:column; gap:8px;">
+
+              <!-- Alert 1: Critical -->
+              <div style="display:flex; gap:12px; padding:12px 16px; background:var(--bg-surface); border-radius:var(--radius-md); border-left:3px solid var(--state-error);">
+                <div style="width:6px; border-radius:50%; background:var(--state-error); flex-shrink:0; margin-top:7px;"></div>
+                <div style="flex:1; min-width:0;">
+                  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+                    <span style="font-size:13px; font-weight:600; color:var(--text-primary); font-family:var(--font-mono);">300750.SZ</span>
+                    <span style="font-size:11px; color:var(--text-tertiary); font-family:var(--font-mono);">14:32:15</span>
+                  </div>
+                  <div style="font-size:12px; color:var(--text-secondary); margin-bottom:2px;">宁德时代</div>
+                  <div style="font-size:11px; color:var(--state-error); font-weight:500; margin-bottom:4px;">跌破止损线</div>
+                  <div style="font-size:12px; color:var(--text-secondary); line-height:1.5;">宁德时代已跌破-5%止损线，当前亏损 <span style="color:var(--color-down); font-weight:600; font-family:var(--font-mono);">-6.05%</span></div>
+                </div>
+              </div>
+
+              <!-- Alert 2: Critical -->
+              <div style="display:flex; gap:12px; padding:12px 16px; background:var(--bg-surface); border-radius:var(--radius-md); border-left:3px solid var(--state-error);">
+                <div style="width:6px; border-radius:50%; background:var(--state-error); flex-shrink:0; margin-top:7px;"></div>
+                <div style="flex:1; min-width:0;">
+                  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+                    <span style="font-size:13px; font-weight:600; color:var(--text-primary); font-family:var(--font-mono);">002594.SZ</span>
+                    <span style="font-size:11px; color:var(--text-tertiary); font-family:var(--font-mono);">14:28:03</span>
+                  </div>
+                  <div style="font-size:12px; color:var(--text-secondary); margin-bottom:2px;">比亚迪</div>
+                  <div style="font-size:11px; color:var(--state-error); font-weight:500; margin-bottom:4px;">单日跌幅超限</div>
+                  <div style="font-size:12px; color:var(--text-secondary); line-height:1.5;">比亚迪单日跌幅已达 <span style="color:var(--color-down); font-weight:600; font-family:var(--font-mono);">-8.32%</span>，超过-8%限制</div>
+                </div>
+              </div>
+
+              <!-- Alert 3: Warning -->
+              <div style="display:flex; gap:12px; padding:12px 16px; background:var(--bg-surface); border-radius:var(--radius-md); border-left:3px solid var(--state-warning);">
+                <div style="width:6px; border-radius:50%; background:var(--state-warning); flex-shrink:0; margin-top:7px;"></div>
+                <div style="flex:1; min-width:0;">
+                  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+                    <span style="font-size:13px; font-weight:600; color:var(--text-primary); font-family:var(--font-mono);">600519.SH</span>
+                    <span style="font-size:11px; color:var(--text-tertiary); font-family:var(--font-mono);">14:15:42</span>
+                  </div>
+                  <div style="font-size:12px; color:var(--text-secondary); margin-bottom:2px;">贵州茅台</div>
+                  <div style="font-size:11px; color:var(--state-warning); font-weight:500; margin-bottom:4px;">接近止损线</div>
+                  <div style="font-size:12px; color:var(--text-secondary); line-height:1.5;">贵州茅台当前亏损 <span style="color:var(--color-down); font-weight:600; font-family:var(--font-mono);">-4.20%</span>，接近-5%止损线</div>
+                </div>
+              </div>
+
+              <!-- Alert 4: Warning -->
+              <div style="display:flex; gap:12px; padding:12px 16px; background:var(--bg-surface); border-radius:var(--radius-md); border-left:3px solid var(--state-warning);">
+                <div style="width:6px; border-radius:50%; background:var(--state-warning); flex-shrink:0; margin-top:7px;"></div>
+                <div style="flex:1; min-width:0;">
+                  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+                    <span style="font-size:13px; font-weight:600; color:var(--text-primary); font-family:var(--font-mono);">601012.SH</span>
+                    <span style="font-size:11px; color:var(--text-tertiary); font-family:var(--font-mono);">13:58:20</span>
+                  </div>
+                  <div style="font-size:12px; color:var(--text-secondary); margin-bottom:2px;">隆基绿能</div>
+                  <div style="font-size:11px; color:var(--state-warning); font-weight:500; margin-bottom:4px;">成交量异常</div>
+                  <div style="font-size:12px; color:var(--text-secondary); line-height:1.5;">隆基绿能成交量突然放大，5分钟成交量超过日均同时段 <span style="font-weight:600; font-family:var(--font-mono);">3.5倍</span></div>
+                </div>
+              </div>
+
+              <!-- Alert 5: Warning -->
+              <div style="display:flex; gap:12px; padding:12px 16px; background:var(--bg-surface); border-radius:var(--radius-md); border-left:3px solid var(--state-warning);">
+                <div style="width:6px; border-radius:50%; background:var(--state-warning); flex-shrink:0; margin-top:7px;"></div>
+                <div style="flex:1; min-width:0;">
+                  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+                    <span style="font-size:13px; font-weight:600; color:var(--text-primary); font-family:var(--font-mono);">300059.SZ</span>
+                    <span style="font-size:11px; color:var(--text-tertiary); font-family:var(--font-mono);">13:42:07</span>
+                  </div>
+                  <div style="font-size:12px; color:var(--text-secondary); margin-bottom:2px;">东方财富</div>
+                  <div style="font-size:11px; color:var(--state-warning); font-weight:500; margin-bottom:4px;">波动率超标</div>
+                  <div style="font-size:12px; color:var(--text-secondary); line-height:1.5;">东方财富波动率达 <span style="font-weight:600; font-family:var(--font-mono);">3.85%</span>，超过预警阈值3.0%</div>
+                </div>
+              </div>
+
+              <!-- Alert 6: Info -->
+              <div style="display:flex; gap:12px; padding:12px 16px; background:var(--bg-surface); border-radius:var(--radius-md); border-left:3px solid var(--state-info);">
+                <div style="width:6px; border-radius:50%; background:var(--state-info); flex-shrink:0; margin-top:7px;"></div>
+                <div style="flex:1; min-width:0;">
+                  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+                    <span style="font-size:13px; font-weight:600; color:var(--text-primary);">北向资金</span>
+                    <span style="font-size:11px; color:var(--text-tertiary); font-family:var(--font-mono);">13:30:00</span>
+                  </div>
+                  <div style="font-size:12px; color:var(--text-secondary); margin-bottom:2px;">市场整体</div>
+                  <div style="font-size:11px; color:var(--state-info); font-weight:500; margin-bottom:4px;">北向资金大额流出</div>
+                  <div style="font-size:12px; color:var(--text-secondary); line-height:1.5;">北向资金今日净流出 <span style="font-weight:600; font-family:var(--font-mono);">-52.3亿</span>，建议关注持仓风险</div>
+                </div>
+              </div>
+
+              <!-- Alert 7: Info -->
+              <div style="display:flex; gap:12px; padding:12px 16px; background:var(--bg-surface); border-radius:var(--radius-md); border-left:3px solid var(--state-info);">
+                <div style="width:6px; border-radius:50%; background:var(--state-info); flex-shrink:0; margin-top:7px;"></div>
+                <div style="flex:1; min-width:0;">
+                  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+                    <span style="font-size:13px; font-weight:600; color:var(--text-primary);">板块监测</span>
+                    <span style="font-size:11px; color:var(--text-tertiary); font-family:var(--font-mono);">11:20:35</span>
+                  </div>
+                  <div style="font-size:12px; color:var(--text-secondary); margin-bottom:2px;">新能源板块</div>
+                  <div style="font-size:11px; color:var(--state-info); font-weight:500; margin-bottom:4px;">板块资金流向异常</div>
+                  <div style="font-size:12px; color:var(--text-secondary); line-height:1.5;">新能源板块出现大额资金流出，板块内持仓需关注</div>
+                </div>
+              </div>
+
+              <!-- Alert 8: Info -->
+              <div style="display:flex; gap:12px; padding:12px 16px; background:var(--bg-surface); border-radius:var(--radius-md); border-left:3px solid var(--state-info);">
+                <div style="width:6px; border-radius:50%; background:var(--state-info); flex-shrink:0; margin-top:7px;"></div>
+                <div style="flex:1; min-width:0;">
+                  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+                    <span style="font-size:13px; font-weight:600; color:var(--text-primary); font-family:var(--font-mono);">000858.SZ</span>
+                    <span style="font-size:11px; color:var(--text-tertiary); font-family:var(--font-mono);">10:05:18</span>
+                  </div>
+                  <div style="font-size:12px; color:var(--text-secondary); margin-bottom:2px;">五粮液</div>
+                  <div style="font-size:11px; color:var(--state-info); font-weight:500; margin-bottom:4px;">大额买单</div>
+                  <div style="font-size:12px; color:var(--text-secondary); line-height:1.5;">五粮液出现 <span style="font-weight:600; font-family:var(--font-mono);">5,000手</span> 大额买单，成交价 168.50</div>
+                </div>
+              </div>
+
+            </div><!-- /告警列表内容 -->
+          </div><!-- /左列 -->
+
+          <!-- ====== 右列: 止损规则配置 (10份) ====== -->
+          <div style="flex:10; min-width:0; display:flex; flex-direction:column; gap:16px;">
+
+            <!-- 规则配置标题 -->
+            <div style="display:flex; align-items:center; gap:8px;">
+              <h2 style="font-size:16px; font-weight:600; color:var(--text-primary); margin:0;">止损规则配置</h2>
+            </div>
+
+            <!-- Rule Card 1: 个股止损线 -->
+            <div style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:var(--radius-lg); padding:16px 20px;">
+              <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <i data-icon="trending-down" style="width:18px; height:18px; color:var(--state-error);"></i>
+                  <span style="font-size:14px; font-weight:600; color:var(--text-primary);">个股止损线</span>
+                </div>
+                <!-- Toggle ON -->
+                <label style="position:relative; display:inline-block; width:40px; height:22px; cursor:pointer;">
+                  <input type="checkbox" checked style="opacity:0; width:0; height:0;">
+                  <span style="position:absolute; inset:0; background:var(--state-success); border-radius:var(--radius-full); transition:background .2s;"></span>
+                  <span style="position:absolute; top:2px; left:2px; width:18px; height:18px; background:#fff; border-radius:50%; transition:transform .2s; transform:translateX(18px);"></span>
+                </label>
+              </div>
+              <div style="display:flex; align-items:center; gap:12px;">
+                <span style="font-size:12px; color:var(--text-secondary); white-space:nowrap;">止损比例</span>
+                <div style="flex:1; height:6px; background:var(--bg-elevated); border-radius:var(--radius-full); position:relative; overflow:hidden;">
+                  <div style="width:33%; height:100%; background:linear-gradient(90deg, var(--state-warning), var(--state-error)); border-radius:var(--radius-full);"></div>
+                </div>
+                <div style="display:flex; align-items:center; gap:4px; background:var(--bg-elevated); border:1px solid var(--border-default); border-radius:var(--radius-sm); padding:4px 10px;">
+                  <span style="font-size:13px; color:var(--state-error); font-family:var(--font-mono); font-weight:600;">-5.0%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Rule Card 2: 个股止盈线 -->
+            <div style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:var(--radius-lg); padding:16px 20px;">
+              <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <i data-icon="trending-up" style="width:18px; height:18px; color:var(--color-up);"></i>
+                  <span style="font-size:14px; font-weight:600; color:var(--text-primary);">个股止盈线</span>
+                </div>
+                <!-- Toggle ON -->
+                <label style="position:relative; display:inline-block; width:40px; height:22px; cursor:pointer;">
+                  <input type="checkbox" checked style="opacity:0; width:0; height:0;">
+                  <span style="position:absolute; inset:0; background:var(--state-success); border-radius:var(--radius-full); transition:background .2s;"></span>
+                  <span style="position:absolute; top:2px; left:2px; width:18px; height:18px; background:#fff; border-radius:50%; transition:transform .2s; transform:translateX(18px);"></span>
+                </label>
+              </div>
+              <div style="display:flex; align-items:center; gap:12px;">
+                <span style="font-size:12px; color:var(--text-secondary); white-space:nowrap;">止盈比例</span>
+                <div style="flex:1; height:6px; background:var(--bg-elevated); border-radius:var(--radius-full); position:relative; overflow:hidden;">
+                  <div style="width:50%; height:100%; background:linear-gradient(90deg, var(--state-success), var(--color-up)); border-radius:var(--radius-full);"></div>
+                </div>
+                <div style="display:flex; align-items:center; gap:4px; background:var(--bg-elevated); border:1px solid var(--border-default); border-radius:var(--radius-sm); padding:4px 10px;">
+                  <span style="font-size:13px; color:var(--color-up); font-family:var(--font-mono); font-weight:600;">+10.0%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Rule Card 3: 单日跌幅限制 -->
+            <div style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:var(--radius-lg); padding:16px 20px;">
+              <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <i data-icon="arrow-down-circle" style="width:18px; height:18px; color:var(--state-warning);"></i>
+                  <span style="font-size:14px; font-weight:600; color:var(--text-primary);">单日跌幅限制</span>
+                </div>
+                <!-- Toggle ON -->
+                <label style="position:relative; display:inline-block; width:40px; height:22px; cursor:pointer;">
+                  <input type="checkbox" checked style="opacity:0; width:0; height:0;">
+                  <span style="position:absolute; inset:0; background:var(--state-success); border-radius:var(--radius-full); transition:background .2s;"></span>
+                  <span style="position:absolute; top:2px; left:2px; width:18px; height:18px; background:#fff; border-radius:50%; transition:transform .2s; transform:translateX(18px);"></span>
+                </label>
+              </div>
+              <div style="display:flex; align-items:center; gap:12px;">
+                <span style="font-size:12px; color:var(--text-secondary); white-space:nowrap;">最大跌幅</span>
+                <div style="flex:1; height:6px; background:var(--bg-elevated); border-radius:var(--radius-full); position:relative; overflow:hidden;">
+                  <div style="width:53%; height:100%; background:linear-gradient(90deg, var(--state-warning), var(--state-error)); border-radius:var(--radius-full);"></div>
+                </div>
+                <div style="display:flex; align-items:center; gap:4px; background:var(--bg-elevated); border:1px solid var(--border-default); border-radius:var(--radius-sm); padding:4px 10px;">
+                  <span style="font-size:13px; color:var(--state-error); font-family:var(--font-mono); font-weight:600;">-8.0%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Rule Card 4: 波动率预警 -->
+            <div style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:var(--radius-lg); padding:16px 20px;">
+              <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <i data-icon="activity" style="width:18px; height:18px; color:var(--state-info);"></i>
+                  <span style="font-size:14px; font-weight:600; color:var(--text-primary);">波动率预警</span>
+                </div>
+                <!-- Toggle ON -->
+                <label style="position:relative; display:inline-block; width:40px; height:22px; cursor:pointer;">
+                  <input type="checkbox" checked style="opacity:0; width:0; height:0;">
+                  <span style="position:absolute; inset:0; background:var(--state-success); border-radius:var(--radius-full); transition:background .2s;"></span>
+                  <span style="position:absolute; top:2px; left:2px; width:18px; height:18px; background:#fff; border-radius:50%; transition:transform .2s; transform:translateX(18px);"></span>
+                </label>
+              </div>
+              <div style="display:flex; align-items:center; gap:12px;">
+                <span style="font-size:12px; color:var(--text-secondary); white-space:nowrap;">预警阈值</span>
+                <div style="flex:1; height:6px; background:var(--bg-elevated); border-radius:var(--radius-full); position:relative; overflow:hidden;">
+                  <div style="width:30%; height:100%; background:linear-gradient(90deg, var(--state-info), var(--state-warning)); border-radius:var(--radius-full);"></div>
+                </div>
+                <div style="display:flex; align-items:center; gap:4px; background:var(--bg-elevated); border:1px solid var(--border-default); border-radius:var(--radius-sm); padding:4px 10px;">
+                  <span style="font-size:13px; color:var(--state-info); font-family:var(--font-mono); font-weight:600;">3.0%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 保存按钮 -->
+            <div style="padding-top:8px;">
+              <button style="width:100%; padding:10px 0; background:var(--color-primary); color:#fff; border:none; border-radius:var(--radius-md); font-size:14px; font-weight:600; cursor:pointer; transition:background .15s;">保存配置</button>
+            </div>
+
+          </div><!-- /右列 -->
+        </div><!-- /主内容区 -->
+      </div><!-- /右侧内容区域 -->
+    </main>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

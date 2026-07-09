@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>复盘报告合集</title>
+    <style id="theme-vars">
+/* =========================================================
+   A股盯盘与复盘系统 — Brand Design Tokens (v3)
+   Professional Investment Research Report Style
+   ========================================================= */
+
+:root {
+  /* ---- Color System ---- */
+  --color-primary: #0f3460;
+  --color-primary-hover: #1a4a8a;
+  --color-primary-active: #0a2848;
+  --color-primary-light: #eaf0ff;
+  --color-primary-bg: #f0f4ff;
+
+  /* A-Stock Convention — Red=Up, Green=Down */
+  --color-up: #e74c3c;
+  --color-up-bg: #ffeaea;
+  --color-down: #27ae60;
+  --color-down-bg: #eaffea;
+  --color-flat: #888;
+
+  /* Semantic Status Colors */
+  --state-success: #27ae60;
+  --state-warning: #f39c12;
+  --state-error: #e74c3c;
+  --state-info: #2980b9;
+
+  /* Background & Surface — Light theme */
+  --bg-base: #f5f6f8;
+  --bg-elevated: #ffffff;
+  --bg-surface: #f8f9fb;
+  --bg-card: #ffffff;
+  --bg-hover: #f0f4ff;
+  --bg-overlay: rgba(0, 0, 0, 0.5);
+
+  /* Header Gradient */
+  --header-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+
+  /* Text */
+  --text-primary: #2c3e50;
+  --text-secondary: #555;
+  --text-tertiary: #888;
+  --text-inverse: #ffffff;
+
+  /* Border */
+  --border-default: #e8ecf1;
+  --border-subtle: #f0f0f0;
+  --border-strong: #ddd;
+
+  /* ---- Shape System ---- */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* ---- Typography ---- */
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --font-mono: "SF Mono", "JetBrains Mono", "Fira Code", "Consolas", monospace;
+
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-base: 14px;
+  --text-lg: 15px;
+  --text-xl: 18px;
+  --text-2xl: 22px;
+  --text-3xl: 28px;
+
+  --leading-tight: 1.2;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.7;
+
+  /* ---- Spacing ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* ---- Shadows ---- */
+  --shadow-sm: 0 1px 4px rgba(0,0,0,0.06);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+}
+
+/* Tag styles */
+.tag-hot { background: #ffeaea; color: #e74c3c; font-size: 11px; padding: 2px 8px; border-radius: 4px; display: inline-block; }
+.tag-policy { background: #eaf6ff; color: #2980b9; font-size: 11px; padding: 2px 8px; border-radius: 4px; display: inline-block; }
+.tag-industry { background: #eaffea; color: #27ae60; font-size: 11px; padding: 2px 8px; border-radius: 4px; display: inline-block; }
+.tag-overseas { background: #fff3e0; color: #e67e22; font-size: 11px; padding: 2px 8px; border-radius: 4px; display: inline-block; }
+.tag-risk { background: #fff8e1; color: #f39c12; font-size: 11px; padding: 2px 8px; border-radius: 4px; display: inline-block; }
+
+/* Utility classes */
+.up { color: var(--color-up); }
+.down { color: var(--color-down); }
+.neutral { color: var(--color-flat); }
+
+/* Summary box gradient */
+.summary-box {
+  background: linear-gradient(135deg, #e8f0fe, #f0e8fe);
+  border-radius: 10px;
+  padding: 20px 24px;
+}
+
+/* Risk box */
+.risk-box {
+  background: #fff8e1;
+  border-left: 4px solid #f39c12;
+  border-radius: 8px;
+  padding: 16px 20px;
+}
+
+    </style>
+
+    <!-- Page-specific styles -->
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+
+      body {
+        font-family: var(--font-family);
+        background: var(--bg-base);
+        color: var(--text-primary);
+        font-size: var(--text-base);
+        line-height: var(--leading-normal);
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .page-container {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: var(--space-8) var(--space-6);
+      }
+
+      /* ---- Header ---- */
+      .page-header {
+        background: var(--header-gradient);
+        border-radius: var(--radius-xl);
+        padding: 36px 40px 32px;
+        color: var(--text-inverse);
+        margin-bottom: var(--space-8);
+      }
+      .page-header h1 {
+        font-size: 28px;
+        font-weight: 700;
+        margin-bottom: var(--space-2);
+        letter-spacing: 1px;
+      }
+      .page-header .subtitle {
+        font-size: var(--text-lg);
+        opacity: 0.85;
+        margin-bottom: var(--space-3);
+      }
+      .page-header .update-time {
+        font-size: var(--text-sm);
+        opacity: 0.6;
+      }
+
+      /* ---- Section Card ---- */
+      .section-card {
+        background: var(--bg-card);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+        padding: 28px 32px;
+        margin-bottom: var(--space-6);
+      }
+      .section-card h2 {
+        font-size: 20px;
+        font-weight: 700;
+        color: #1a1a2e;
+        margin-bottom: var(--space-5);
+        padding-bottom: var(--space-3);
+        border-bottom: 1px solid var(--border-default);
+      }
+
+      /* ---- Summary Box ---- */
+      .summary-box {
+        background: linear-gradient(135deg, #e8f0fe, #f0e8fe);
+        border-radius: 10px;
+        padding: 20px 24px;
+        font-size: var(--text-base);
+        color: var(--text-secondary);
+        line-height: var(--leading-relaxed);
+        margin-bottom: var(--space-6);
+      }
+
+      /* ---- ECharts container ---- */
+      .chart-container {
+        width: 100%;
+        height: 360px;
+      }
+
+      /* ---- Event List (Report Items) ---- */
+      .event-list {
+        list-style: none;
+        padding: 0;
+      }
+      .event-item {
+        padding: 20px 0;
+        border-bottom: 1px solid var(--border-subtle);
+        display: flex;
+        gap: var(--space-5);
+        align-items: flex-start;
+      }
+      .event-item:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+      }
+      .event-item:first-child {
+        padding-top: 0;
+      }
+
+      /* Date badge */
+      .date-badge {
+        flex-shrink: 0;
+        width: 60px;
+        height: 60px;
+        background: #0f3460;
+        color: var(--text-inverse);
+        border-radius: var(--radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-align: center;
+        line-height: 1.2;
+      }
+
+      /* Report content */
+      .report-content {
+        flex: 1;
+        min-width: 0;
+      }
+      .report-meta {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+        margin-bottom: var(--space-2);
+        flex-wrap: wrap;
+      }
+
+      /* Type tags */
+      .type-tag {
+        font-size: 11px;
+        padding: 2px 10px;
+        border-radius: var(--radius-full);
+        font-weight: 500;
+      }
+      .type-tag.daily {
+        background: var(--primary-light);
+        color: var(--color-primary);
+      }
+      .type-tag.weekly {
+        background: #f0e8fe;
+        color: #7c3aed;
+      }
+
+      /* Report title */
+      .report-title {
+        font-size: var(--text-xl);
+        font-weight: 700;
+        color: #1a1a2e;
+        cursor: pointer;
+        text-decoration: none;
+        transition: color 0.2s;
+      }
+      .report-title:hover {
+        color: var(--color-primary);
+      }
+
+      /* Metric chips */
+      .metric-chips {
+        display: flex;
+        gap: var(--space-2);
+        margin-top: var(--space-2);
+        flex-wrap: wrap;
+      }
+      .chip {
+        font-size: var(--text-sm);
+        padding: 3px 10px;
+        border-radius: var(--radius-full);
+        background: var(--bg-surface);
+        border: 1px solid var(--border-default);
+        font-weight: 500;
+      }
+      .chip.up { color: var(--color-up); border-color: var(--color-up-bg); }
+      .chip.down { color: var(--color-down); border-color: var(--color-down-bg); }
+
+      /* Report summary */
+      .report-summary {
+        margin-top: var(--space-2);
+        font-size: var(--text-base);
+        color: var(--text-secondary);
+        line-height: var(--leading-relaxed);
+      }
+
+      /* Read more link */
+      .read-more {
+        display: inline-block;
+        margin-top: var(--space-2);
+        font-size: var(--text-sm);
+        color: var(--color-primary);
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.2s;
+      }
+      .read-more:hover {
+        color: var(--color-primary-hover);
+        text-decoration: underline;
+      }
+
+      /* ---- Strategy Tracking ---- */
+      .strategy-grid {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-4);
+      }
+      .strategy-item {
+        display: flex;
+        align-items: center;
+        gap: var(--space-4);
+        padding: 16px 20px;
+        background: var(--bg-surface);
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-subtle);
+      }
+      .strategy-label {
+        flex-shrink: 0;
+        font-size: var(--text-sm);
+        font-weight: 700;
+        padding: 4px 12px;
+        border-radius: var(--radius-sm);
+        min-width: 80px;
+        text-align: center;
+      }
+      .strategy-label.offensive {
+        background: var(--color-up-bg);
+        color: var(--color-up);
+      }
+      .strategy-label.steady {
+        background: var(--color-primary-bg);
+        color: var(--color-primary);
+      }
+      .strategy-label.avoid {
+        background: var(--color-down-bg);
+        color: var(--color-down);
+      }
+      .strategy-detail {
+        flex: 1;
+      }
+      .strategy-name {
+        font-size: var(--text-base);
+        font-weight: 600;
+        color: #1a1a2e;
+      }
+      .strategy-status {
+        font-size: var(--text-sm);
+        color: var(--text-secondary);
+        margin-top: 2px;
+      }
+      .strategy-rating {
+        flex-shrink: 0;
+        color: var(--color-up);
+        font-size: var(--text-sm);
+        font-weight: 600;
+      }
+
+      /* ---- Risk Box ---- */
+      .risk-box {
+        background: #fff8e1;
+        border-left: 4px solid #f39c12;
+        border-radius: 8px;
+        padding: 16px 20px;
+        margin-top: var(--space-5);
+      }
+      .risk-box h4 {
+        font-size: var(--text-base);
+        font-weight: 700;
+        color: #e67e22;
+        margin-bottom: var(--space-2);
+      }
+      .risk-box ul {
+        list-style: none;
+        padding: 0;
+      }
+      .risk-box ul li {
+        position: relative;
+        padding-left: 18px;
+        font-size: var(--text-sm);
+        color: var(--text-secondary);
+        line-height: var(--leading-relaxed);
+        margin-bottom: var(--space-1);
+      }
+      .risk-box ul li::before {
+        content: "•";
+        position: absolute;
+        left: 0;
+        color: #f39c12;
+        font-weight: 700;
+      }
+
+      /* ---- Trend Analysis ---- */
+      .trend-analysis {
+        margin-top: var(--space-5);
+        padding: 16px 20px;
+        background: var(--bg-surface);
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-subtle);
+      }
+      .trend-analysis h4 {
+        font-size: var(--text-base);
+        font-weight: 700;
+        color: #1a1a2e;
+        margin-bottom: var(--space-2);
+      }
+      .trend-analysis p {
+        font-size: var(--text-sm);
+        color: var(--text-secondary);
+        line-height: var(--leading-relaxed);
+      }
+
+      /* ---- Footer ---- */
+      .page-footer {
+        text-align: center;
+        padding: var(--space-8) var(--space-6) var(--space-10);
+        color: var(--text-tertiary);
+        font-size: var(--text-xs);
+        line-height: var(--leading-relaxed);
+      }
+      .page-footer .disclaimer {
+        margin-top: var(--space-2);
+        padding-top: var(--space-3);
+        border-top: 1px solid var(--border-subtle);
+      }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+
+      <!-- ========== Header ========== -->
+      <header class="page-header">
+        <h1>每日复盘报告合集</h1>
+        <p class="subtitle">近期市场复盘与策略跟踪</p>
+        <p class="update-time">最近更新: 2026年7月9日</p>
+      </header>
+
+      <!-- ========== 一、本周市场回顾 ========== -->
+      <section class="section-card">
+        <h2>一、本周市场回顾</h2>
+        <div class="summary-box">
+          本周A股市场整体呈现震荡上行态势。上证指数周一在央行利好刺激下一度冲高，随后量能有所萎缩，指数进入窄幅整理阶段。科技板块表现活跃，AI算力概念延续强势，金融股在政策催化下出现集体拉升。新能源板块有所回调，市场热点轮动加快。北向资金本周整体维持净流入，显示外资对A股中期走势仍保持乐观。
+        </div>
+        <div id="trendChart" class="chart-container"></div>
+      </section>
+
+      <!-- ========== 二、近期复盘报告 ========== -->
+      <section class="section-card">
+        <h2>二、近期复盘报告</h2>
+        <ul class="event-list">
+
+          <!-- Report 1 -->
+          <li class="event-item">
+            <div class="date-badge">07.07</div>
+            <div class="report-content">
+              <div class="report-meta">
+                <span class="type-tag daily">日报</span>
+                <a class="report-title">市场震荡上行 科技板块领涨</a>
+              </div>
+              <div class="metric-chips">
+                <span class="chip up">大盘+0.85%</span>
+                <span class="chip">涨停45家</span>
+                <span class="chip up">北向+28.5亿</span>
+              </div>
+              <p class="report-summary">三大指数集体收涨，科技板块全面开花，AI算力、半导体、光模块等细分方向涨幅居前，市场赚钱效应良好。</p>
+              <a href="#" class="read-more">阅读全文 →</a>
+            </div>
+          </li>
+
+          <!-- Report 2 -->
+          <li class="event-item">
+            <div class="date-badge">07.06</div>
+            <div class="report-content">
+              <div class="report-meta">
+                <span class="type-tag daily">日报</span>
+                <a class="report-title">量能萎缩 指数窄幅整理</a>
+              </div>
+              <div class="metric-chips">
+                <span class="chip down">大盘-0.12%</span>
+                <span class="chip">涨停28家</span>
+                <span class="chip down">北向-5.2亿</span>
+              </div>
+              <p class="report-summary">市场成交量明显萎缩，指数在窄幅区间内震荡整理，板块分化加剧，资金观望情绪浓厚。</p>
+              <a href="#" class="read-more">阅读全文 →</a>
+            </div>
+          </li>
+
+          <!-- Report 3 -->
+          <li class="event-item">
+            <div class="date-badge">07.05</div>
+            <div class="report-content">
+              <div class="report-meta">
+                <span class="type-tag daily">日报</span>
+                <a class="report-title">央行利好刺激 金融股集体走强</a>
+              </div>
+              <div class="metric-chips">
+                <span class="chip up">大盘+1.23%</span>
+                <span class="chip">涨停52家</span>
+                <span class="chip up">北向+45.8亿</span>
+              </div>
+              <p class="report-summary">央行定向降准利好释放，金融板块集体走强，银行、保险、券商联动上涨，带动指数大幅上攻。</p>
+              <a href="#" class="read-more">阅读全文 →</a>
+            </div>
+          </li>
+
+          <!-- Report 4 -->
+          <li class="event-item">
+            <div class="date-badge">07.04</div>
+            <div class="report-content">
+              <div class="report-meta">
+                <span class="type-tag daily">日报</span>
+                <a class="report-title">新能源板块回调 热点轮动加快</a>
+              </div>
+              <div class="metric-chips">
+                <span class="chip down">大盘-0.35%</span>
+                <span class="chip">涨停32家</span>
+                <span class="chip down">北向-12.3亿</span>
+              </div>
+              <p class="report-summary">新能源板块高位回调，锂电池、光伏概念跌幅居前，市场热点快速轮动，短期操作难度增加。</p>
+              <a href="#" class="read-more">阅读全文 →</a>
+            </div>
+          </li>
+
+          <!-- Report 5 -->
+          <li class="event-item">
+            <div class="date-badge">06.30</div>
+            <div class="report-content">
+              <div class="report-meta">
+                <span class="type-tag weekly" style="background:#f0e8fe;color:#7c3aed;">周报</span>
+                <a class="report-title">上半年回顾：AI概念贯穿全年主线</a>
+              </div>
+              <div class="metric-chips">
+                <span class="chip up">大盘+2.15%</span>
+                <span class="chip">涨停186家</span>
+                <span class="chip up">北向+95.2亿</span>
+              </div>
+              <p class="report-summary">2026年上半年A股市场结构性牛市延续，AI产业链贯穿全年主线，算力、大模型、应用端轮番表现，上半年收官之战录得亮眼涨幅。</p>
+              <a href="#" class="read-more">阅读全文 →</a>
+            </div>
+          </li>
+
+          <!-- Report 6 -->
+          <li class="event-item">
+            <div class="date-badge">06.29</div>
+            <div class="report-content">
+              <div class="report-meta">
+                <span class="type-tag daily">日报</span>
+                <a class="report-title">半年报行情预热 消费板块活跃</a>
+              </div>
+              <div class="metric-chips">
+                <span class="chip up">大盘+0.56%</span>
+                <span class="chip">涨停38家</span>
+                <span class="chip up">北向+18.6亿</span>
+              </div>
+              <p class="report-summary">半年报预告密集发布，业绩超预期的消费龙头受到资金追捧，食品饮料、家电板块表现活跃。</p>
+              <a href="#" class="read-more">阅读全文 →</a>
+            </div>
+          </li>
+
+        </ul>
+      </section>
+
+      <!-- ========== 三、市场热度趋势 ========== -->
+      <section class="section-card">
+        <h2>三、市场热度趋势</h2>
+        <div id="heatChart" class="chart-container"></div>
+        <div class="trend-analysis">
+          <h4>趋势分析</h4>
+          <p>本周市场涨停家数波动较大，7月5日在央行利好刺激下达到52家峰值（红色区间），随后热度有所回落至45家（蓝色区间）。7月6日量能萎缩，涨停仅28家（灰色区间），显示市场短线情绪趋于谨慎。整体来看，市场赚钱效应维持在中等偏上水平，结构性机会仍然丰富，但需关注量能配合情况。</p>
+        </div>
+      </section>
+
+      <!-- ========== 四、本周策略跟踪 ========== -->
+      <section class="section-card">
+        <h2>四、本周策略跟踪</h2>
+        <div class="strategy-grid">
+
+          <!-- Strategy 1 -->
+          <div class="strategy-item">
+            <span class="strategy-label offensive">进攻策略</span>
+            <div class="strategy-detail">
+              <div class="strategy-name">科技/AI算力主线</div>
+              <div class="strategy-status">AI算力、光模块、半导体设备等细分方向延续强势，关注龙头企业放量突破信号。</div>
+            </div>
+            <span class="strategy-rating">持续★★★★★</span>
+          </div>
+
+          <!-- Strategy 2 -->
+          <div class="strategy-item">
+            <span class="strategy-label steady">稳健策略</span>
+            <div class="strategy-detail">
+              <div class="strategy-name">消费/金融底仓</div>
+              <div class="strategy-status">金融板块受政策催化走强，消费龙头半年报预期向好，可作为底仓配置。</div>
+            </div>
+            <span class="strategy-rating">观察★★★</span>
+          </div>
+
+          <!-- Strategy 3 -->
+          <div class="strategy-item">
+            <span class="strategy-label avoid">回避方向</span>
+            <div class="strategy-detail">
+              <div class="strategy-name">锂矿/机器人</div>
+              <div class="strategy-status">新能源板块高位回调压力较大，机器人概念缺乏持续催化，短期注意风险。</div>
+            </div>
+            <span class="strategy-rating">退潮★★</span>
+          </div>
+
+        </div>
+
+        <!-- Risk Box -->
+        <div class="risk-box">
+          <h4>本周风险提示</h4>
+          <ul>
+            <li>中美贸易摩擦可能出现新的变数，关注关税政策动向</li>
+            <li>7月中旬为半年报密集披露期，警惕业绩暴雷个股风险</li>
+            <li>新能源板块高位回落，锂矿、光伏等方向短期需回避</li>
+            <li>央行公开市场操作节奏变化可能影响流动性预期</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- ========== Footer ========== -->
+      <footer class="page-footer">
+        <p>数据来源: Wind、东方财富、同花顺 | 以上内容仅供参考，不构成投资建议</p>
+        <div class="disclaimer">
+          <p>免责声明: 本报告信息均来源于公开资料，我们对信息的准确性和完整性不作任何保证。报告中的内容和意见仅供参考，不构成任何投资建议。投资者据此操作，风险自担。</p>
+        </div>
+      </footer>
+
+    </div>
+
+    <!-- ECharts CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+    <script>
+      /**
+       * Initialize the Shanghai Composite Index 5-day trend line chart.
+       */
+      (function initTrendChart() {
+        var chart = echarts.init(document.getElementById('trendChart'));
+        var dates = ['7/1', '7/2', '7/3', '7/4', '7/5', '7/6', '7/7', '7/8', '7/9'];
+        var values = [3285.6, 3302.1, 3318.4, 3307.2, 3347.8, 3343.8, 3362.3, 3358.1, 3368.5];
+
+        var option = {
+          backgroundColor: 'transparent',
+          title: {
+            text: '上证指数 5日趋势 (7/1 - 7/9)',
+            left: 'center',
+            top: 8,
+            textStyle: { fontSize: 15, fontWeight: 600, color: '#1a1a2e' }
+          },
+          tooltip: {
+            trigger: 'axis',
+            backgroundColor: '#fff',
+            borderColor: '#e8ecf1',
+            borderWidth: 1,
+            textStyle: { color: '#2c3e50', fontSize: 13 },
+            formatter: function(params) {
+              var p = params[0];
+              return p.name + '<br/>' +
+                     '<span style="color:#e74c3c;font-weight:700">收盘: ' + p.value.toFixed(2) + '</span>';
+            }
+          },
+          grid: { left: 60, right: 30, top: 55, bottom: 40 },
+          xAxis: {
+            type: 'category',
+            data: dates,
+            axisLine: { lineStyle: { color: '#e8ecf1' } },
+            axisLabel: { color: '#888', fontSize: 12 },
+            axisTick: { show: false }
+          },
+          yAxis: {
+            type: 'value',
+            min: 3260,
+            max: 3390,
+            splitLine: { lineStyle: { color: '#f0f0f0', type: 'dashed' } },
+            axisLine: { show: false },
+            axisTick: { show: false },
+            axisLabel: { color: '#888', fontSize: 12 }
+          },
+          series: [{
+            type: 'line',
+            data: values,
+            smooth: true,
+            symbol: 'circle',
+            symbolSize: 8,
+            itemStyle: { color: '#0f3460', borderColor: '#fff', borderWidth: 2 },
+            lineStyle: { color: '#0f3460', width: 3 },
+            areaStyle: {
+              color: {
+                type: 'linear',
+                x: 0, y: 0, x2: 0, y2: 1,
+                colorStops: [
+                  { offset: 0, color: 'rgba(15, 52, 96, 0.15)' },
+                  { offset: 1, color: 'rgba(15, 52, 96, 0.01)' }
+                ]
+              }
+            }
+          }]
+        };
+
+        chart.setOption(option);
+        window.addEventListener('resize', function() { chart.resize(); });
+      })();
+
+      /**
+       * Initialize the daily limit-up count bar chart with threshold-based coloring.
+       */
+      (function initHeatChart() {
+        var chart = echarts.init(document.getElementById('heatChart'));
+        var dates = ['7/2', '7/3', '7/4', '7/5', '7/6', '7/7'];
+        var values = [48, 45, 32, 52, 28, 45];
+
+        /**
+         * Determine bar color based on limit-up count threshold.
+         * >=50: red (strong), 30-50: navy (normal), <30: gray (weak)
+         */
+        function getBarColor(val) {
+          if (val >= 50) return '#e74c3c';
+          if (val >= 30) return '#0f3460';
+          return '#aab2bd';
+        }
+
+        var option = {
+          backgroundColor: 'transparent',
+          title: {
+            text: '每日涨停家数',
+            left: 'center',
+            top: 8,
+            textStyle: { fontSize: 15, fontWeight: 600, color: '#1a1a2e' }
+          },
+          tooltip: {
+            trigger: 'axis',
+            backgroundColor: '#fff',
+            borderColor: '#e8ecf1',
+            borderWidth: 1,
+            textStyle: { color: '#2c3e50', fontSize: 13 },
+            formatter: function(params) {
+              var p = params[0];
+              var label = p.value >= 50 ? '强势' : (p.value >= 30 ? '正常' : '偏弱');
+              return p.name + '<br/>' +
+                     '涨停家数: <span style="font-weight:700;color:' + getBarColor(p.value) + '">' + p.value + '家</span>' +
+                     '<br/>热度等级: ' + label;
+            }
+          },
+          grid: { left: 55, right: 30, top: 55, bottom: 40 },
+          xAxis: {
+            type: 'category',
+            data: dates,
+            axisLine: { lineStyle: { color: '#e8ecf1' } },
+            axisLabel: { color: '#888', fontSize: 12 },
+            axisTick: { show: false }
+          },
+          yAxis: {
+            type: 'value',
+            min: 0,
+            max: 60,
+            splitLine: { lineStyle: { color: '#f0f0f0', type: 'dashed' } },
+            axisLine: { show: false },
+            axisTick: { show: false },
+            axisLabel: { color: '#888', fontSize: 12 }
+          },
+          series: [{
+            type: 'bar',
+            data: values.map(function(v) {
+              return {
+                value: v,
+                itemStyle: {
+                  color: getBarColor(v),
+                  borderRadius: [4, 4, 0, 0]
+                }
+              };
+            }),
+            barWidth: '42%',
+            label: {
+              show: true,
+              position: 'top',
+              fontSize: 13,
+              fontWeight: 600,
+              color: '#1a1a2e',
+              formatter: '{c}家'
+            }
+          }]
+        };
+
+        chart.setOption(option);
+        window.addEventListener('resize', function() { chart.resize(); });
+      })();
+    </script>
+</body>
+</html>
