@@ -1,2 +1,2 @@
 # trading_tools
-a股复盘工具
+a股盯盘与复盘工具
